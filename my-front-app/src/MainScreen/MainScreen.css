@@ -1,0 +1,99 @@
+.logo-width{
+    /* margin: 10px; */
+    /* padding: 10px; */
+    display: flex;
+    justify-content: space-between;
+    /* width: 1200px; */
+    /* height: 50px; */
+    background-color: rgb(255, 255, 255);
+    height: 61px;
+    box-shadow: 0px 0px rgb(144, 144, 144), -1em 0 .4em rgb(151, 151, 151);
+}
+.logo{
+    width: 70px;
+    height: 70px;
+    /* background-color: rgb(71, 57, 57); */
+
+   
+   
+}
+
+
+.user{
+    display: flex;
+    width: 250px;
+    height: 50px;
+    /* background-color: rgb(152, 20, 20); */
+    
+
+}
+.profile-name{
+    width: 50px;
+    height: 50px;
+    /* background-color: rgb(245, 0, 0); */
+    border-radius: 50%;
+    margin-top: 5px;
+    /* color: rgb(0, 123, 223); */
+    
+}
+
+.profile-name img{
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 1px solid rgb(7, 248, 236);
+}
+.title-user{
+    width: 150px;
+    /* height: 10px; */
+    /* background-color: rgb(8, 160, 147); */
+}
+.title-user h2{
+    padding-left: 1rem;
+    font-size: 15px;
+    color: rgb(4, 4, 4);
+   
+    
+}
+.header{
+    background-color: rgba(9, 14, 46, 0.902);
+    /* background-color: rgba(24, 69, 117, 0.902); */
+    width: 100%;
+    height: 80px;
+    
+}
+.width-login{
+    display: flex;
+    justify-content: space-between;
+    width: 1100px;
+    margin: auto;
+    
+}
+.logo img{
+    margin-top: -3px;
+}
+
+.profile img{
+   width: 50px;
+   height: 50px;
+   margin-top: 18px;
+   border: 1px solid white;
+   border-radius: 50%;
+   color: white;
+}
+body{
+    background-color: #f1f1f1;
+}
+.inv-sty{
+    color: rgb(8, 120, 233);
+    background-color: white;
+    padding: 20px;
+    font-weight: bold;
+    text-align: center;
+    
+}
+.out-btn{
+    margin-top: 15px;
+    margin-right: 10px;
+}
+@import "tailwindcss";
