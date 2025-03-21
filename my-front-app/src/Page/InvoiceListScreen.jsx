@@ -26,6 +26,9 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { PiMicrosoftExcelLogoThin } from "react-icons/pi";
 import { FaTelegramPlane } from "react-icons/fa";
+import { FcPrint } from "react-icons/fc";
+import { RiEdit2Line } from "react-icons/ri";
+const { Option } = Select;
 const InvoiceListScreen = () => {
     const [list, setList] = useState([]);
     const [data, setData] = useState([]);
@@ -42,28 +45,21 @@ const InvoiceListScreen = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [selectedDay, setSelectedDay] = useState(null);
-
+    const searchRef = useRef();
     const [invoice, setInvoice] = useState(null);
-    
-
-
-    
-    //   const [loading, setLoading] = useState(false);
-      const [message1, setMessage] = useState("");
+    const [searchId, setSearchId] = useState("");
+    const [orderStatus, setOrderStatus] = useState("");
+    const [message1, setMessage] = useState("");
 
     useEffect(() => {
-        // if (!selectedMonth || !data) {
-        //     setFilteredData([]);
-        //     // fetchInvoices();
-        //     // return;
-        // }
+       
         if (!selectedMonth) {
-            setFilteredData([]); 
+            setFilteredData([]);
             if (data.length === 0)
-                 fetchInvoices();
-                khriel()
-                
-            // Prevents unnecessary calls
+                fetchInvoices();
+            khriel()
+
+            
             return;
         }
 
@@ -83,6 +79,8 @@ const InvoiceListScreen = () => {
 
 
     }, [selectedMonth, data])
+
+
     const monthNames = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
@@ -95,41 +93,177 @@ const InvoiceListScreen = () => {
         console.log(res.data)
     };
 
-    const filterRef = useRef({
-        txt_search: null,
-        status: null
-    })
+
+    // const fetchInvoices = async () => {
+    //     try {
+    //         const response = await axios.get("http://localhost:5000/invoices/getlist");
+    //         setData(response.data);
+    //         console.log(response.data)
+    //     } catch (error) {
+    //         console.error("Error fetching invoices:", error);
+    //         message.error("Failed to load invoices.");
+    //     }
+    // };
+
     const fetchInvoices = async () => {
+        const searchId = searchRef.current.input.value; // Get input value
+
         try {
-            const response = await axios.get("http://localhost:5000/invoices/getlist");
-            setData(response.data);
-            console.log(response.data)
+            const { data } = await axios.get("http://localhost:5000/invoices/getlist", {
+                params: {
+                    id: searchId || undefined, // Pass only if exists
+                    orderStatus: orderStatus || undefined, // Pass only if exists
+                },
+            });
+
+            setData(data); // Update invoices list
         } catch (error) {
-            console.error("Error fetching invoices:", error);
-            message.error("Failed to load invoices.");
+            console.error("Error fetching invoice:", error);
         }
     };
 
 
-    //   ==================
+    //   ================== for month data
+
+    // const handleExport = () => {
+    //     if (!filteredData || filteredData.length === 0) {
+    //         alert(`No invoices found for ${selectedMonth}`);
+    //         return;
+    //     }
+    //     if (!data || data.length === 0) {
+    //         alert("No data to export");
+    //         return;
+    //     }
+
+    //     let totalAmountKHR = 0;
+    //     let totalAmountUSD = 0;
+
+    //     filteredData.forEach(invoice => {
+    //         const amount = parseFloat(invoice.finalAmount) || 0;
+    //         if (invoice.currency === "KHR") {
+    //             totalAmountKHR += amount;
+    //         } else if (invoice.currency === "USD") {
+    //             totalAmountUSD += amount;
+    //         }
+    //     });
+
+    //     const formattedData = filteredData.map((invoice) => {
+    //         let itemsArray = [];
+    //         try {
+    //             itemsArray = typeof invoice.items === "string" ? JSON.parse(invoice.items) : invoice.items || [];
+    //         } catch (error) {
+    //             console.error("Error parsing items:", error);
+    //             itemsArray = [];
+    //         }
+
+    //         const discount = parseFloat(invoice.discount) || 0;
+    //         const deposit = parseFloat(invoice.disposit) || 0;
+    //         const finalAmount = parseFloat(invoice.finalAmount) || 0;
+
+    //         const rowData = {
+    //             "No": invoice.invId ? `000-${invoice.invId}` : "N/A",
+    //             "Name": invoice.customerName || "N/A",
+    //             "Qty": invoice.qtyTotal || 0,
+    //             "Discount": invoice.currency === "USD"
+    //                 ? `${discount.toFixed(2)} USD`
+    //                 : `${discount.toLocaleString()} KHR`,
+    //             "D-Percentage(%)": invoice.discountPercentage || 0,
+    //             "Deposit": invoice.currency === "USD"
+    //                 ? `${deposit.toFixed(2)} USD`
+    //                 : `${deposit.toLocaleString()} KHR`,
+    //             "Amount": invoice.currency === "USD"
+    //                 ? `${finalAmount.toFixed(2)} USD`
+    //                 : `${finalAmount.toLocaleString()} KHR`,
+    //             "Order": invoice.orderStatus === 1
+    //                 ? "Paid"
+    //                 : invoice.orderStatus === 2
+    //                     ? "Deposit"
+    //                     : invoice.orderStatus === 3
+    //                         ? "Unpaid"
+    //                         : "Unknown",
+    //             "Status": invoice.status === 1 ? "Active" : invoice.status === 2 ? "Inactive" : "Unknown",
+    //             "Out Time": invoice.CreateAt ? formatDateClient(invoice.CreateAt) : "N/A",
+    //             "For Month": selectedMonth
+    //         };
+
+    //         // Dynamically add item details in separate columns
+    //         itemsArray.forEach((item, index) => {
+    //             rowData[`${index + 1} Name`] = item.name || "N/A";
+    //             rowData[`${index + 1} Qty`] = item.qty || 0;
+    //             rowData[` ${index + 1} Price`] = invoice.currency === "USD"
+    //                 ? `${parseFloat(item.price || 0).toFixed(2)} USD`
+    //                 : `${parseFloat(item.price || 0).toLocaleString()} KHR`;
+    //             rowData[`${index + 1} Amount`] = invoice.currency === "USD"
+    //                 ? `${parseFloat(item.amount || 0).toFixed(2)} USD`
+    //                 : `${parseFloat(item.amount || 0).toLocaleString()} KHR`;
+    //         });
+
+    //         return rowData;
+    //     });
+
+    //     // Add total rows
+    //     formattedData.push({
+    //         "No": "",
+    //         "Name": "",
+    //         "Qty": "",
+    //         "Discount": "",
+    //         "D-Percentage(%)": "",
+    //         "Deposit": "",
+    //         "Amount": `Total (USD): ${totalAmountUSD.toFixed(2)} USD`,
+    //         "Order": "",
+    //         "Status": "",
+    //         "Out Time": "",
+    //         "For Month": selectedMonth
+    //     });
+
+    //     formattedData.push({
+    //         "No": "",
+    //         "Name": "",
+    //         "Qty": "",
+    //         "Discount": "",
+    //         "D-Percentage(%)": "",
+    //         "Deposit": "",
+    //         "Amount": `Total (KHR): ${totalAmountKHR.toLocaleString()} KHR`,
+    //         "Order": "",
+    //         "Status": "",
+    //         "Out Time": "",
+    //         "For Month": selectedMonth
+    //     });
+
+    //     // Create Excel file using SheetJS
+    //     const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    //     const workbook = XLSX.utils.book_new();
+    //     XLSX.utils.book_append_sheet(workbook, worksheet, `Invoices_${selectedMonth}`);
+
+    //     // Download Excel file
+    //     const fileName = `Invoices_${selectedMonth}.xlsx`;
+    //     XLSX.writeFile(workbook, fileName);
+    // };
+
 
     const handleExport = () => {
-        if (!filteredData || filteredData.length === 0) {
-            alert(`No invoices found for ${selectedMonth}`);
+        // Use filteredData if a month is selected; otherwise, export all data
+        let exportData = selectedMonth && filteredData.length > 0 ? filteredData : data;
+
+        if (!exportData || exportData.length === 0) {
+            alert("No data available for export.");
             return;
         }
 
-        // Calculate total amount for the month
-        const totalAmountForMonth = filteredData.reduce(
-            (sum, invoice) => sum + (parseFloat(invoice.finalAmount) || 0),
-            0
-        );
-        
+        let totalAmountKHR = 0;
+        let totalAmountUSD = 0;
 
-        // Format data for export
-        const formattedData = filteredData.map((invoice) => {
+        exportData.forEach(invoice => {
+            const amount = parseFloat(invoice.finalAmount) || 0;
+            if (invoice.currency === "KHR") {
+                totalAmountKHR += amount;
+            } else if (invoice.currency === "USD") {
+                totalAmountUSD += amount;
+            }
+        });
+
+        const formattedData = exportData.map((invoice) => {
             let itemsArray = [];
-
             try {
                 itemsArray = typeof invoice.items === "string" ? JSON.parse(invoice.items) : invoice.items || [];
             } catch (error) {
@@ -137,137 +271,162 @@ const InvoiceListScreen = () => {
                 itemsArray = [];
             }
 
-            return {
+            const discount = parseFloat(invoice.discount) || 0;
+            const deposit = parseFloat(invoice.disposit) || 0;
+            const finalAmount = parseFloat(invoice.finalAmount) || 0;
+
+            const rowData = {
                 "No": invoice.invId ? `000-${invoice.invId}` : "N/A",
-                "Customer Name": invoice.customerName || "N/A",
-                "Items": Array.isArray(itemsArray)
-                    ? itemsArray.map(item => `name:${item.name}, qty:${item.qty}, price:${item.price}, amount:${item.amount}`).join(" | ")
-                    : "N/A",
-                "Total Qty": invoice.qtyTotal || 0,
-                "Discount(%)": invoice.discount || 0,
-                "Deposit($)": invoice.disposit || 0,
-                "Final Amount": invoice.finalAmount || 0,
-                "Process Order": invoice.orderStatus === 1
+                "Name": invoice.customerName || "N/A",
+                "Qty": invoice.qtyTotal || 0,
+                "Discount": invoice.currency === "USD"
+                    ? `${discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                    : `${discount.toLocaleString()} KHR`,
+                "D-Percentage(%)": invoice.discountPercentage || 0,
+                "Deposit": invoice.currency === "USD"
+                    ? `${deposit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                    : `${deposit.toLocaleString()} KHR`,
+                "Amount": invoice.currency === "USD"
+                    ? `${finalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                    : `${finalAmount.toLocaleString()} KHR`,
+                "Order": invoice.orderStatus === 1
                     ? "Paid"
                     : invoice.orderStatus === 2
                         ? "Deposit"
                         : invoice.orderStatus === 3
-                            ? "Cancel"
+                            ? "Unpaid"
                             : "Unknown",
                 "Status": invoice.status === 1 ? "Active" : invoice.status === 2 ? "Inactive" : "Unknown",
                 "Out Time": invoice.CreateAt ? formatDateClient(invoice.CreateAt) : "N/A",
-                "For Month": selectedMonth
+                "For Month": selectedMonth || "All Data"
             };
+
+            // Dynamically add item details in separate columns
+            itemsArray.forEach((item, index) => {
+                rowData[`${index + 1} Name`] = item.name || "N/A";
+                rowData[`${index + 1} Qty`] = item.qty || 0;
+                rowData[` ${index + 1} Price`] = invoice.currency === "USD"
+                    ? `${parseFloat(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                    : `${parseFloat(item.price || 0).toLocaleString()} KHR`;
+                rowData[`${index + 1} Amount`] = invoice.currency === "USD"
+                    ? `${parseFloat(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                    : `${parseFloat(item.amount || 0).toLocaleString()} KHR`;
+            });
+
+            return rowData;
         });
 
-        // Add total amount row
+        // Add total rows
         formattedData.push({
             "No": "",
-            "Customer Name": "",
-            "Items": "",
-            "Total Qty": "",
-            "Discount(%)": "",
-            "Deposit($)": "",
-            "Final Amount": `Total: ${totalAmountForMonth.toFixed(2)}`,
-            "Process Order": "",
+            "Name": "",
+            "Qty": "",
+            "Discount": "",
+            "D-Percentage(%)": "",
+            "Deposit": "",
+            "Amount": `Total (USD): ${totalAmountUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`,
+            "Order": "",
             "Status": "",
             "Out Time": "",
-            "For Month": selectedMonth
+            "For Month": selectedMonth || "All Data"
+        });
+
+        formattedData.push({
+            "No": "",
+            "Name": "",
+            "Qty": "",
+            "Discount": "",
+            "D-Percentage(%)": "",
+            "Deposit": "",
+            "Amount": `Total (KHR): ${totalAmountKHR.toLocaleString()} KHR`,
+            "Order": "",
+            "Status": "",
+            "Out Time": "",
+            "For Month": selectedMonth || "All Data"
         });
 
         // Create Excel file using SheetJS
         const worksheet = XLSX.utils.json_to_sheet(formattedData);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, `Invoices_${selectedMonth}`);
+        XLSX.utils.book_append_sheet(workbook, worksheet, `Invoices_${selectedMonth || "All_Data"}`);
 
         // Download Excel file
-        const fileName = `Invoices_${selectedMonth}.xlsx`;
+        const fileName = `Invoices_${selectedMonth || "All_Data"}.xlsx`;
         XLSX.writeFile(workbook, fileName);
     };
 
 
 
 
+    // ======================== all data
+    // const handleExportall = () => {
+    //     if (!data || data.length === 0) {
+    //         alert("No data to export");
+    //         return;
+    //     }
+
+    //     // Calculate total amount for all invoices
+    //     // const totalAmountForAll = data.reduce((sum, invoice) => sum + (invoice.finalAmount || 0), 0);
+    //     const totalAmountForAll = data.reduce(
+    //         (sum, invoice) => sum + (parseFloat(invoice.finalAmount) || 0),
+    //         0
+    //     );
 
 
+    //     // Format data for export
+    //     const formattedData = data.map((invoice) => {
+    //         const itemsArray = typeof invoice.items === "string" ? JSON.parse(invoice.items) : invoice.items;
 
-    // ========================
-    const handleExportall = () => {
-        if (!data || data.length === 0) {
-            alert("No data to export");
-            return;
-        }
+    //         return {
+    //             "No": invoice.invId ? `000-${invoice.invId}` : "N/A",
+    //             "Customer Name": invoice.customerName || "N/A",
+    //             "Items": Array.isArray(itemsArray)
+    //                 ? itemsArray.map(item => `name:${item.name}, qty:${item.qty}, price:${item.price}, amount:${item.amount}`).join(" | ")
+    //                 : "N/A",
+    //             "Total Qty": invoice.qtyTotal || 0,
+    //             "Discount(%)": invoice.discount || 0,
+    //             "Deposit($)": invoice.disposit || 0,
+    //             "Final Amount": invoice.finalAmount || 0,
+    //             "Process Order":
+    //                 invoice.orderStatus === 1
+    //                     ? "Paid"
+    //                     : invoice.orderStatus === 2
+    //                         ? "Deposit"
+    //                         : invoice.orderStatus === 3
+    //                             ? "Unpaid"
+    //                             : "Unknown",
+    //             "Status": invoice.status === 1 ? "Active" : invoice.status === 2 ? "Inactive" : "Unknown",
+    //             "Out Time": invoice.CreateAt ? formatDateClient(invoice.CreateAt) : "N/A"
+    //         };
+    //     });
 
-        // Calculate total amount for all invoices
-        // const totalAmountForAll = data.reduce((sum, invoice) => sum + (invoice.finalAmount || 0), 0);
-        const totalAmountForAll = data.reduce(
-            (sum, invoice) => sum + (parseFloat(invoice.finalAmount) || 0),
-            0
-        );
-        
+    //     // Add total amount row at the end
+    //     formattedData.push({
+    //         "No": "",
+    //         "Customer Name": "",
+    //         "Items": "",
+    //         "Total Qty": "",
+    //         "Discount(%)": "",
+    //         "Deposit($)": "",
+    //         "Final Amount": `Total: ${totalAmountForAll.toFixed(2)}`,
+    //         "Process Order": "",
+    //         "Status": "",
+    //         "Out Time": ""
+    //     });
 
-        // Format data for export
-        const formattedData = data.map((invoice) => {
-            const itemsArray = typeof invoice.items === "string" ? JSON.parse(invoice.items) : invoice.items;
+    //     // Use SheetJS to export as Excel
+    //     const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    //     const workbook = XLSX.utils.book_new();
+    //     XLSX.utils.book_append_sheet(workbook, worksheet, "Invoices");
 
-            return {
-                "No": invoice.invId ? `000-${invoice.invId}` : "N/A",
-                "Customer Name": invoice.customerName || "N/A",
-                "Items": Array.isArray(itemsArray)
-                    ? itemsArray.map(item => `name:${item.name}, qty:${item.qty}, price:${item.price}, amount:${item.amount}`).join(" | ")
-                    : "N/A",
-                "Total Qty": invoice.qtyTotal || 0,
-                "Discount(%)": invoice.discount || 0,
-                "Deposit($)": invoice.disposit || 0,
-                "Final Amount": invoice.finalAmount || 0,
-                "Process Order":
-                    invoice.orderStatus === 1
-                        ? "Paid"
-                        : invoice.orderStatus === 2
-                            ? "Deposit"
-                            : invoice.orderStatus === 3
-                                ? "Cancel"
-                                : "Unknown",
-                "Status": invoice.status === 1 ? "Active" : invoice.status === 2 ? "Inactive" : "Unknown",
-                "Out Time": invoice.CreateAt ? formatDateClient(invoice.CreateAt) : "N/A"
-            };
-        });
-
-        // Add total amount row at the end
-        formattedData.push({
-            "No": "",
-            "Customer Name": "",
-            "Items": "",
-            "Total Qty": "",
-            "Discount(%)": "",
-            "Deposit($)": "",
-            "Final Amount": `Total: ${totalAmountForAll.toFixed(2)}`,
-            "Process Order": "",
-            "Status": "",
-            "Out Time": ""
-        });
-
-        // Use SheetJS to export as Excel
-        const worksheet = XLSX.utils.json_to_sheet(formattedData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Invoices");
-
-        // Download the Excel file
-        XLSX.writeFile(workbook, "Invoices.xlsx");
-    };
-
-
-
-
-
-
-
+    //     // Download the Excel file
+    //     XLSX.writeFile(workbook, "Invoices.xlsx");
+    // };
 
 
 
     const handleExport1 = async () => {
         if (!startDate || !endDate) {
-            // alert("Please select both start and end dates");
             message.error("Please select both start and end dates.");
             return;
         }
@@ -288,74 +447,121 @@ const InvoiceListScreen = () => {
                 return;
             }
 
-            // Calculate totals for required fields
-            // let totalFinalAmount = data.reduce((sum, invoice) => sum + (invoice.finalAmount || 0), 0);
-            // let totalQty = data.reduce((sum, invoice) => sum + (invoice.qtyTotal || 0), 0);
-            // let totalDiscount = data.reduce((sum, invoice) => sum + (invoice.discount || 0), 0);
-            // let totalDeposit = data.reduce((sum, invoice) => sum + (invoice.disposit || 0), 0);
-            let totalFinalAmount = data.reduce((sum, invoice) => sum + (parseFloat(invoice.finalAmount) || 0), 0);
-            let totalQty = data.reduce((sum, invoice) => sum + (parseInt(invoice.qtyTotal) || 0), 0);
-            let totalDiscount = data.reduce((sum, invoice) => sum + (parseFloat(invoice.discount) || 0), 0);
-            let totalDeposit = data.reduce((sum, invoice) => sum + (parseFloat(invoice.disposit) || 0), 0);
-
-
-            const transformedData = data.map((invoice) => {
-                let itemsFormatted = "No Items";
-
+            // **Find the maximum number of items in any invoice**
+            let maxItems = 0;
+            data.forEach((invoice) => {
                 if (invoice.items && typeof invoice.items === "string") {
                     try {
                         let parsedItems = JSON.parse(invoice.items);
                         if (Array.isArray(parsedItems)) {
-                            itemsFormatted = parsedItems.map(item =>
-                                `name:${item.name}, qty:${item.qty}, price:${item.price}, amount:${item.amount}`
-                            ).join(" | ");
+                            maxItems = Math.max(maxItems, parsedItems.length);
+                        }
+                    } catch (error) {
+                        console.error("Error parsing items JSON:", error);
+                    }
+                }
+            });
+
+            // **Format currency values correctly**
+            const formatValue = (value, currency) => {
+                const numValue = parseFloat(value) || 0;
+                return currency === "USD"
+                    ? `${numValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                    : `${numValue.toLocaleString()} KHR`;
+            };
+
+            // **Transform data for Excel export**
+            const transformedData = data.map((invoice) => {
+                let rowData = {
+                    "No": invoice.invId ? `000-${invoice.invId}` : "N/A",
+                    "Name": invoice.customerName || "N/A",
+                    "Qty": invoice.qtyTotal || 0,
+                    "Discount": formatValue(invoice.discount, invoice.currency),
+                    "Deposit": formatValue(invoice.disposit, invoice.currency),
+                    "Amount": formatValue(invoice.finalAmount, invoice.currency),
+                    "Order": invoice.orderStatus === 1 ? "Paid" : invoice.orderStatus === 2 ? "Deposit" : invoice.orderStatus === 3 ? "Unpaid" : "Unknown",
+                    "Status": invoice.status === 1 ? "Active" : invoice.status === 2 ? "Inactive" : "Unknown",
+                    "Out Time": invoice.CreateAt ? formatDateClient(invoice.CreateAt) : "N/A"
+                };
+
+                // **Dynamically add item columns**
+                if (invoice.items && typeof invoice.items === "string") {
+                    try {
+                        let parsedItems = JSON.parse(invoice.items);
+                        if (Array.isArray(parsedItems)) {
+                            parsedItems.forEach((item, index) => {
+                                rowData[` ${index + 1} Name`] = item.name;
+                                rowData[` ${index + 1} Qty`] = item.qty;
+                                rowData[` ${index + 1} Price`] = formatValue(item.price, invoice.currency);
+                                rowData[` ${index + 1} Amount`] = formatValue(item.amount, invoice.currency);
+                            });
                         }
                     } catch (error) {
                         console.error("Error parsing items JSON:", error);
                     }
                 }
 
-                return {
-                    "No": invoice.invId ? `000-${invoice.invId}` : "N/A",
-                    "Customer Name": invoice.customerName || "N/A",
-                    "Items": itemsFormatted,
-                    "Total Qty": invoice.qtyTotal || 0,
-                    "Discount(%)": invoice.discount || 0,
-                    "Deposit($)": invoice.disposit || 0,
-                    "Final Amount": invoice.finalAmount || 0,
-                    "Process Order":
-                        invoice.orderStatus === 1
-                            ? "Paid"
-                            : invoice.orderStatus === 2
-                                ? "Disposit"
-                                : invoice.orderStatus === 3
-                                    ? "Cancel"
-                                    : "Unknown",
-                    "Status": invoice.status === 1 ? "Active" : invoice.status === 2 ? "Inactive" : "Unknown",
-                    "Out Time": invoice.CreateAt ? formatDateClient(invoice.CreateAt) : "N/A"
-                };
+                return rowData;
             });
 
-            // Add a total row at the end
-            transformedData.push({
+            // **Calculate totals for USD and KHR**
+            let totalUSD = 0;
+            let totalKHR = 0;
+            data.forEach((invoice) => {
+                const amount = parseFloat(invoice.finalAmount) || 0;
+                if (invoice.currency === "USD") {
+                    totalUSD += amount;
+                } else {
+                    totalKHR += amount;
+                }
+            });
+
+            // **Push totals row**
+            let totalRowUSD = {
                 "No": "",
-                "Customer Name": "Total",
-                "Items": "",
-                "Total Qty": totalQty,  // Add total qty here
-                "Discount(%)": totalDiscount.toFixed(2), // Add total discount here
-                "Deposit($)": totalDeposit.toFixed(2), // Add total deposit here
-                "Final Amount": totalFinalAmount.toFixed(2), // Add total amount here
-                "Process Order": "",  
+                "Name": "Total (USD)",
+                "Qty": "",
+                "Discount": "",
+                "Deposit": "",
+                "Amount": `${totalUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`,
+                "Order": "",
                 "Status": "",
                 "Out Time": ""
-            });
+            };
 
-            // Convert JSON to Worksheet
+            let totalRowKHR = {
+                "No": "",
+                "Name": "Total (KHR)",
+                "Qty": "",
+                "Discount": "",
+                "Deposit": "",
+                "Amount": `${totalKHR.toLocaleString()} KHR`,
+                "Order": "",
+                "Status": "",
+                "Out Time": ""
+            };
+
+            // Add empty values for dynamically created item columns in total rows
+            for (let i = 1; i <= maxItems; i++) {
+                totalRowUSD[` ${i} Name`] = "";
+                totalRowUSD[` ${i} Qty`] = "";
+                totalRowUSD[` ${i} Price`] = "";
+                totalRowUSD[` ${i} Amount`] = "";
+
+                totalRowKHR[` ${i} Name`] = "";
+                totalRowKHR[` ${i} Qty`] = "";
+                totalRowKHR[` ${i} Price`] = "";
+                totalRowKHR[` ${i} Amount`] = "";
+            }
+
+            transformedData.push(totalRowUSD, totalRowKHR);
+
+            // **Convert JSON to Worksheet**
             const worksheet = XLSX.utils.json_to_sheet(transformedData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Invoices Today");
 
-            // Create Excel file and trigger download
+            // **Create Excel file and trigger download**
             XLSX.writeFile(workbook, `ExportedData_${startDate}_to_${endDate}.xlsx`);
         } catch (error) {
             console.error("Error exporting data:", error);
@@ -365,224 +571,72 @@ const InvoiceListScreen = () => {
 
 
 
+    // const fetchInvoiceById = async (invoiceId) => {
+    //     console.log(`📢 Fetching Invoice ID: ${invoiceId}`);
 
+    //     try {
+    //         const response = await axios.get(`http://localhost:5000/invoices/getlist/${invoiceId}`);
+    //         console.log("📜 Selected Invoice:", response.data);
 
-
-
-
-
-
-
-
-
-    // const shareDataToTelegram  = async () => {
-    //     // if (!selectedCustomer || items.length === 0) {
-    //     //   alert('Please select a customer and add items.');
-    //     //   return;
-    //     // }
-    //     setLoading(true);
-    //     setMessage("");
-    
-    
-    //     try { 
-          
-    //         // 1️⃣ Save invoice to database
-    //         const response = await axios.post("http://localhost:5000/invoices", {
-    //             customerId: selectedCustomer.id,
-    //             items,
-    //             discount: selectedCustomer.discount,
-    //             disposit: selectedCustomer.disposit
-    //         });
-    
-    //         // alert('Invoice saved successfully! Final Amount: $' + response.data.finalAmount);
-    //         message.success('Invoice saved successfully! Final Amount: $' + response.data.finalAmount);
-         
-    //         setItems([]);
-    //         setSelectedCustomer(null);
-    
-    //         // 2️⃣ Send the invoice data to Telegram
-    //         const telegramResponse = await axios.get("http://localhost:5000/send-to-telegram");
-    //         setMessage(telegramResponse.data.message);
-    
+    //         if (response.data.success) {
+    //             const invoice = response.data.invoice;
+    //             setInvoice(invoice); // ✅ Store the invoice data
+    //             openTelegram(invoice); // ✅ Forward to Telegram immediately
+    //         } else {
+    //             alert("No invoice found!");
+    //         }
     //     } catch (error) {
-    //         console.error("🔥 Error Details:", error.response ? error.response.data : error.message);
-    //         setMessage("❌ Failed to save or send data."); 
+    //         console.error("❌ Error fetching invoice:", error);
     //     }
-    
-    //     setLoading(false);
     // };
 
-    // const openTelegram = () => {
-    //     const message = encodeURIComponent("Hello! Check out this new invoice.");
-      
+
+    // const getProcessStatus = (status) => {
+    //     switch (status) {
+    //         case 1: return " 🟢 បង់រួចរាល់🔄 ";
+    //         case 2: return " 🟡 កក់ប្រាក់🔄 ";
+    //         case 3: return " 🔴 មិនទាន់រួចរាល់🔄 ";
+    //         default: return " ⚪ Unknown ";
+    //     }
+    // };
+    // // 🔹 Open invoice details in Telegram
+    // const openTelegram = (invoice) => {
+
+    //     const message = encodeURIComponent(`
+    // 📜 ហាងបោះពុម្ភ ឌឹព្រីន 
+    // ======================
+    // 🆔 លេខវិក្ក័យបត្រ: 000${invoice.invId}
+    // 📅 កាលបរិច្ឆេទ: ${new Date(invoice.CreateAt).toLocaleString()}
+    // ---------------------------
+    // 📦 មុខទំនិញ:
+    // ${formatItems(invoice.items)}
+    // ---------------------------
+    // 📊 ចំនួនសរុប: ${invoice.qtyTotal}
+    // 💵 បញ្ចុះតម្លៃ: ${invoice.discount} %
+    // 💰 ប្រាក់កក់: ${invoice.discountPercentage} $
+    // 💵 ទឹកប្រាក់ត្រូវបង់ចំនួន: ${invoice.finalAmount} $
+    // 📌 អតិថិជនបាន: ${getProcessStatus(invoice.customerStatus)} 
+    // ---------------------------
+
+    // `);
+
     //     window.open(`https://t.me/share/url?url=${message}`, "_blank");
-        
-    //   };
-   
-
-// const openTelegram = async () => {
-//     try {
-//         const response = await axios.get("http://localhost:5000/invoices/getlist"); // i need catch id one one for display data for forword to
-//         const data = response.data;
-
-//         if (!data.success) {
-//             alert("Error fetching invoice data");
-//             return;
-//         }
-
-//         const message = encodeURIComponent(`
-// 📜 *Invoice Details:*
-// 🆔 Invoice ID: ${data.invoiceId}
-// 👤 Customer: ${data.customerName}
-// 💵 Total Amount: $${data.finalAmount}
-// 📅 Date: ${data.date}
-//         `);
-
-//        c
-
-//     } catch (error) {
-//         console.error("❌ Error fetching data:", error);
-//     }
-// };
+    // };
 
 
 
-// const openTelegram = async (invoiceId) => {  // Pass invoice ID
-//     try {
-//         const response = await axios.get(`http://localhost:5000/invoices/getlist/${invoiceId}`); // Fetch specific invoice
-//         const data = response.data; // i use data SetData for usestate
-
-//         if (!data.success) {
-//             alert("No invoice found!");
-//             return;
-//         }
-
-//         const invoice = data.data; // ✅ Get the invoice data
-
-//         const message = encodeURIComponent(`
-// 📜 *Invoice Details:*
-// 🆔 Invoice ID: ${invoice.invId}
-// 👤 Customer: ${invoice.customerName}
-// 📦 Items: ${invoice.items}
-// 📊 Qty Total: ${invoice.qtyTotal}
-// 💵 Discount: ${invoice.discount}%
-// 💰 Disposit: ${invoice.disposit}$
-// 💵 Final Amount: $${invoice.finalAmount}
-// 📅 Date: ${invoice.CreateAt}
-//         `);
-
-//         // window.open(`https://t.me/share/url?text=${message}`, "_blank");
-//         window.open(`https://t.me/share/url?url=${message}`, "_blank");
-
-//     } catch (error) {
-//         console.error("❌ Error fetching data:", error);
-//     }
-// };
-
-
-const fetchInvoiceById = async (invoiceId) => {
-    console.log(`📢 Fetching Invoice ID: ${invoiceId}`);
-
-    try {
-        const response = await axios.get(`http://localhost:5000/invoices/getlist/${invoiceId}`);
-        console.log("📜 Selected Invoice:", response.data);
-
-        if (response.data.success) {
-            const invoice = response.data.invoice;
-            setInvoice(invoice); // ✅ Store the invoice data
-            openTelegram(invoice); // ✅ Forward to Telegram immediately
-        } else {
-            alert("No invoice found!");
-        }
-    } catch (error) {
-        console.error("❌ Error fetching invoice:", error);
-    }
-};
-
-
-const getProcessStatus = (status) => {
-    switch (status) {
-        case 1: return " 🟢 បង់រួចរាល់🔄 ";
-        case 2: return " 🟡 កក់ប្រាក់🔄 ";
-        case 3: return " 🔴 មិនទាន់រួចរាល់🔄 ";
-        default: return " ⚪ Unknown ";
-    }
-};
-// 🔹 Open invoice details in Telegram
-const openTelegram = (invoice) => {
-    // const processStatus = getProcessStatus(invoice.customerName); // Get status based on customerName
-    const message = encodeURIComponent(`
-📜 ហាងបោះពុម្ភ ឌឹព្រីន 
-======================
-🆔 លេខវិក្ក័យបត្រ: 000${invoice.invId}
-📅 កាលបរិច្ឆេទ: ${new Date(invoice.CreateAt).toLocaleString()}
----------------------------
-📦 មុខទំនិញ:
-${formatItems(invoice.items)}
----------------------------
-📊 ចំនួនសរុប: ${invoice.qtyTotal}
-💵 បញ្ចុះតម្លៃ: ${invoice.discount} %
-💰 ប្រាក់កក់: ${invoice.disposit} $
-💵 ទឹកប្រាក់ត្រូវបង់ចំនួន: ${invoice.finalAmount} $
-📌 អតិថិជនបាន: ${getProcessStatus(invoice.customerStatus)} 
----------------------------
-
-`);
-
-    window.open(`https://t.me/share/url?url=${message}`, "_blank");
-};
-
-
-
-// Format Items as List
-const formatItems = (items) => {
-    try {
-        const parsedItems = JSON.parse(items);
-        return parsedItems // No   Name  Qty  Price Amount 
-            .map((item, index) => ` ${index + 1}.   ${item.name}   -   ${item.qty}qty     x      ${item.price} $     =     ${item.amount.toLocaleString()} $`) // show under link  No   Name  Qty  Price Amount 
-            .join("\n");
-    } catch (error) {
-        console.error("Error parsing items:", error);
-        return items; // Fallback
-    }
-};
-
-
-    
-   
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    // // Format Items as List
+    // const formatItems = (items) => {
+    //     try {
+    //         const parsedItems = JSON.parse(items);
+    //         return parsedItems // No   Name  Qty  Price Amount 
+    //             .map((item, index) => ` ${index + 1}.   ${item.name}   -   ${item.qty}qty     x      ${item.price} $     =     ${item.amount.toLocaleString()} $`) // show under link  No   Name  Qty  Price Amount 
+    //             .join("\n");
+    //     } catch (error) {
+    //         console.error("Error parsing items:", error);
+    //         return items; // Fallback
+    //     }
+    // };
 
 
 
@@ -591,14 +645,19 @@ const formatItems = (items) => {
 
     const deleteInvoice = async (id) => {
         try {
+            if (!window.confirm("Trash delete this invoice?")) return;
+            window.location.reload();
+
             await axios.delete(`http://localhost:5000/invoices/${id}`);
             message.success("Invoice deleted successfully!");
-            fetchInvoices(); // Refresh list after deletion
+
+            // ✅ Refresh the entire page after deletion
         } catch (error) {
             console.error("Error deleting invoice:", error);
             message.error("Failed to delete invoice.");
         }
     };
+
 
 
 
@@ -708,12 +767,16 @@ const formatItems = (items) => {
         const items = JSON.parse(item.items || "[]");
 
         // Calculate total amount before discount and disposit
-        const totalBeforeDiscount = items.reduce((sum, item) => sum + parseFloat(item.amount), 0).toFixed(2); // Ensures 2 decimal places;
-        const kh = riel.map((item,index)=>(item.khriel))
+        const totalBeforeDiscount = items.reduce((sum, item) => sum + parseFloat(item.amount), 0); 
+        // const totalBeforeDiscount = items.reduce((sum, item) => sum + parseFloat(item.amount), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Ensures 2 decimal places;
+        const kh = riel.map((item, index) => (item.khriel))
+        // const currency = item.currency;
+        const currency = item.currency === "KHR" ? "៛" : "$";
+        const finalAmountDue = item.finalAmount - item.disposit;
         const roundToNearest500 = (amount) => {
-            return Math.round(amount / 100  ) * 100   ;
+            return Math.round(amount / 100) * 100;
         };
-       
+
         // Construct the invoice content with proper HTML structure
         const printContent = `
           <!DOCTYPE html>
@@ -841,7 +904,7 @@ const formatItems = (items) => {
             padding: 10px;
         }
         .right-find {
-            width: 35%;
+            width: 40%;
            
 
         } 
@@ -874,7 +937,7 @@ const formatItems = (items) => {
             height:41px
         }
         .balance-right {
-            width: 35%;
+            width: 40%;
              padding-top: 3px;
              
         }
@@ -952,7 +1015,7 @@ const formatItems = (items) => {
                 <th>Product Name</th>
                 <th>Qty</th>
                 <th>Price(Unit)</th>
-                <th>Amount($)</th>
+                <th>Amount(${currency})</th>
             </tr>
             
              
@@ -961,8 +1024,8 @@ const formatItems = (items) => {
                  <td>${index + 1}</td>
                  <td class="left-txt khmer-regular">${item.name}</td>
                 <td>${item.qty}</td>
-                <td>${item.price.toFixed(2)}</td>
-                <td>${item.amount.toFixed(2)} $</td>
+                <td> ${currency === "៛" ? Number(item.price).toLocaleString() : Number(item.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency} </td>
+                <td> ${currency === "៛" ? Number(item.amount).toLocaleString() : Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency} </td>
             </tr> `
         )
 
@@ -976,31 +1039,32 @@ const formatItems = (items) => {
                 <div class="subprice">
                     <div class="title-name">SubTotal</div>
                     <div class="space">:</div>
-                    <div class="title-price">${totalBeforeDiscount} $</div>
+                    <div class="title-price"> ${currency === "៛" ? Number(totalBeforeDiscount).toLocaleString() : Number(totalBeforeDiscount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}</div>
                 </div>
                 <div class="subprice">
                     <div class="title-name">Disposit</div>
                     <div class="space">:</div>
-                    <div class="title-price">${item.disposit} $</div>
+                    <div class="title-price">${currency === "៛" ? Number(item.disposit).toLocaleString() : Number(item.disposit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}</div>
                 </div>
                 <div class="subprice">
                     <div class="title-name">Discount</div>
                     <div class="space">:</div>
-                    <div class="title-price">${item.discount} %</div>
+                    <div class="title-price">${item.discountPercentage} %</div>
                 </div>
             </div>
         </div>
         
          <div class="balence">
-            <div class="balance-left"><p>Exchange-Rate: 1$ = ${kh} ៛</p></div>
+            <div class="balance-left"><p>Exchange-Rate: 1$ = ${kh.toLocaleString()} ៛</p></div>
             <div class="balance-right">
                 <div class="balance-total">
                     <div class="balance-name">Balance Due</div>
-                    <div class="balance-price">${item.finalAmount} $</div>
+                    <div class="balance-price">${currency === "៛" ? Number(finalAmountDue).toLocaleString() : Number(finalAmountDue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}</div>
                 </div>
                 <div class="balance-total">
-                    <div class="balance-name">KH Riel</div>
-                    <div class="balance-price">${roundToNearest500(item.finalAmount * kh).toLocaleString()}  ៛
+                    <div class="balance-name">${currency === "៛" ? "Dollar " : "Kh Riel "} </div>
+                   
+                    <div class="balance-price">${currency === "៛" ? Number(finalAmountDue / kh).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " $" : Number(finalAmountDue * kh).toLocaleString() + " ៛"} 
                     </div>
                    
                 </div>
@@ -1035,7 +1099,6 @@ const formatItems = (items) => {
     };
 
 
-
     const columns = [
         {
             title: "Invoice ID",
@@ -1065,28 +1128,42 @@ const formatItems = (items) => {
             render: (value, item, index) => value + " Qty"
         },
         {
-            title: "Discount (%)",
+            title: "Discount",
             dataIndex: "discount",
+            key: "discount",
+            render: (value, item, index) => (
+                // <span >{item.discount} {item.currency}</span>
+                <span >{item.currency === "KHR" ? Number(item.discount).toLocaleString() : Number(item.discount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}</span>
+            )
+        },
+        {
+            title: "D-Percentage (%)",
+            dataIndex: "discountPercentage",
             key: "discount",
             render: (value, item, index) => value + "%"
         },
         {
-            title: "Disposit ($)",
+            title: "Disposit",
             dataIndex: "disposit",
             key: "disposit",
-            render: (value, item, index) => value + " $"
+            render: (value, item, index) => (
+                // <span >{item.discount} {item.currency}</span>
+                <span >{item.currency === "KHR" ? Number(item.disposit).toLocaleString() : Number(item.disposit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}</span>
+            )
         },
         {
-            title: "Final Amount ($)",
+            title: "Final Amount",
             dataIndex: "finalAmount",
             key: "finalAmount",
-            render: (value, item, index) => value + " $"
+            render: (value, item, index) => (
+                <span >{item.currency === "KHR" ? Number(item.finalAmount).toLocaleString() : Number(item.finalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}</span>
+            )
         },
         {
             title: "Order Status",
             dataIndex: "orderStatus",
             key: "orderStatus",
-            render: (value, item, index) => (value == 1 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "60px" }} color='green'> <span style={{ marginTop: "2.5px", fontSize: "16px" }}><CiMoneyBill /></span> Paid</Tag> : "" || value == 2 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "80px" }}><span style={{ marginTop: "2px", fontSize: "14px" }}><GiReceiveMoney /></span>Disposit</Tag> : "" || value == 3 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "70px" }} color='red'><span style={{ marginTop: "2px", fontSize: "14px" }}><IoMdCloseCircleOutline /></span>Cancel</Tag> : "")
+            render: (value, item, index) => (value == 1 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "60px" }} color='green'> <span style={{ marginTop: "2.5px", fontSize: "16px" }}><CiMoneyBill /></span> Paid</Tag> : "" || value == 2 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "80px" }}><span style={{ marginTop: "2px", fontSize: "14px" }}><GiReceiveMoney /></span>Disposit</Tag> : "" || value == 3 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "70px" }} color='red'><span style={{ marginTop: "2px", fontSize: "14px" }}><IoMdCloseCircleOutline /></span>Unpaid</Tag> : "")
         },
         {
             title: "Status",
@@ -1098,7 +1175,7 @@ const formatItems = (items) => {
             title: "Date",
             dataIndex: "CreateAt",
             key: "CreateAt",
-            render: (value, item, index) => formatDateClient(value)
+            render: (value, item, index) => formatDateClient(value) 
         },
         {
             title: "Action",
@@ -1115,18 +1192,12 @@ const formatItems = (items) => {
                         <Button type='primary' danger  ><span ><AiOutlineDelete /> </span></Button>
 
                     </Popconfirm>
-                    <Button onClick={() => printInvoice(item)} color="cyan" variant="dashed"  ><span ><MdOutlineViewInAr /> </span></Button>
-                    <Button onClick={() => fetchInvoiceById(item.invId)}color="cyan" variant="dashed"  ><span ><FaTelegramPlane /> </span></Button>
+                    <Button onClick={() => printInvoice(item)} color="cyan" variant="dashed"  ><span ><FcPrint /> </span></Button>
+                    {/* <Button onClick={() => fetchInvoiceById(item.invId)} color="cyan" variant="dashed"  ><span ><RiEdit2Line /></span></Button> */}
                 </Space>
             )
         },
     ];
-
-    //   <Button onClick={() => handleclickDelete(item)} type='primary' danger  ><span ><AiOutlineDelete /> </span></Button>
-    //   <Button onClick={() => printInvoice(item)} color="cyan" variant="dashed"  ><span ><MdOutlineViewInAr /> </span></Button>
-
-
-
 
 
 
@@ -1138,24 +1209,32 @@ const formatItems = (items) => {
                 <div>
                     <Space>
                         <div class='font-bold'>Customer  {data.length}</div>
-                        <Input.Search placeholder='Search by name ' onSearch={OnTextSearch} />
-                        <Select placeholder='Pay Processing' allowClear onChange={OnChangeStatus} style={{ width: 150 }}>
-                            <Select.Option value={"1"}>
-                                <div style={{ display: "flex", }}><SiTicktick style={{ marginTop: "8px", fontSize: "13px" }} color='green' /><p style={{ marginLeft: "10px", fontWeight: "bold", color: "green" }}> Paid</p></div>
-                            </Select.Option>
-                            <Select.Option value={"2"}>
-                                {/* <p class='font-bold text-gray-500'>Disposit</p> */}
-                                <div style={{ display: "flex", }}><GiReceiveMoney style={{ marginTop: "8px", fontSize: "13px" }} color='gray' /><p style={{ marginLeft: "10px", fontWeight: "bold", color: "gray" }}> Disposit</p></div>
-                            </Select.Option>
-                            <Select.Option value={"3"}>
-                                {/* <p class='font-bold text-red-500'>Cancel</p> */}
-                                <div style={{ display: "flex", }}><IoMdCloseCircleOutline style={{ marginTop: "8px", fontSize: "13px" }} color='red' /><p style={{ marginLeft: "10px", fontWeight: "bold", color: "red" }}> Cancel</p></div>
-                            </Select.Option>
-                        </Select >
+                        <Input.Search
+                            ref={searchRef} // Attach useRef to the input field
+                            placeholder="Search by Invoice ID"
+                            // enterButton="Search"
+                            allowClear
+                            onSearch={fetchInvoices}
+                        />
+
+                        <Select
+                            placeholder="Pay Proccess"
+                            style={{ width: 150 }}
+                            allowClear
+                            value={orderStatus}
+                            onChange={setOrderStatus}
+
+                        >
+                            <Option value="1">Paid</Option>
+                            <Option value="2">Deposit</Option>
+                            <Option value="3">Unpaid</Option>
+                        </Select>
+
+                        <Button onClick={fetchInvoices} type="primary">Search</Button>
                         <select
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(e.target.value)}
-                            style={{ padding: "4px", marginRight: "30px", border: "1px solid black"  }}
+                            style={{ padding: "4px", marginRight: "30px", border: "1px solid black" }}
                         >
                             <option value="">Select Month</option>
                             {monthNames.map((month, index) => (
@@ -1164,10 +1243,10 @@ const formatItems = (items) => {
                         </select>
 
                         <label>Start Date:</label>
-                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}  style={{ padding: "4px",  }}/>
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ padding: "4px", }} />
                         <label>End Date:</label>
                         <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                        <Button  onClick={handleExport1}>Export for day <PiMicrosoftExcelLogoThin /></Button>
+                        <Button onClick={handleExport1}>Export for day <PiMicrosoftExcelLogoThin /></Button>
 
 
 
@@ -1183,31 +1262,23 @@ const formatItems = (items) => {
                 {/* <Button color="primary" variant="dashed" onClick={handleExport} disabled={!selectedMonth}>Excel<PiMicrosoftExcelLogoThin /></Button>
                 <Button color="primary" variant="dashed" onClick={handleExportall}>Excel<PiMicrosoftExcelLogoThin /></Button>  */}
                 <div class="flex gap-10">
-                 
-                  <div>{selectedMonth ? (
-                    <Button color="primary" variant="dashed" onClick={handleExport} disabled={!selectedMonth}>
-                        Export Month <PiMicrosoftExcelLogoThin />
-                    </Button>
-                ) : (
-                    <Button color="primary" variant="dashed" onClick={handleExportall}>
-                        Export all Data <PiMicrosoftExcelLogoThin />
-                    </Button>
-                )}</div>
-              
+
+                    <div>{selectedMonth ? (
+                        <Button color="primary" variant="dashed" onClick={handleExport} disabled={!selectedMonth}>
+                            Export Month <PiMicrosoftExcelLogoThin />
+                        </Button>
+                    ) : (
+                        <Button color="primary" variant="dashed" onClick={handleExport}>
+                            Export all Data <PiMicrosoftExcelLogoThin />
+                        </Button>
+                    )}</div>
+
 
                 </div>
-                
-                
-
-
-
-
-
 
 
                 {/* === */}
             </div>
-
 
             <div>
 
@@ -1215,180 +1286,17 @@ const formatItems = (items) => {
                     columns={columns}
                     dataSource={data}
                     rowKey="invId"
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ pageSize: 7 }}
                     // pagination={false}
-                    bordered 
-                    //shot id  des
+                    bordered
+                //shot id  des
 
                 />
             </div>
 
 
             <div>
-                <Modal
-                    title={formCat.getFieldValue("Id") == null ? "New customer" : "Update customer"}
-                    open={open}
-                    onCancel={onCloseModal}
-                    okText="Save"
-                    footer={null}
-
-
-                >
-                    <Form
-                        onFinish={onFinish}
-                        layout="vertical"
-                        form={formCat}
-
-
-                    >
-                        <Row gutter={5}>
-                            <Col span={12}>
-                                <Form.Item
-                                    label="Customer Name"
-                                    name={"Name"}
-                                    rules={[
-                                        {
-                                            required: true,
-                                            message: 'Please input Customer Name!',
-                                        },
-                                    ]}
-                                >
-
-                                    <Input placeholder='Customer Name' />
-
-                                </Form.Item>
-
-                            </Col>
-
-                            <Col span={12}>
-                                <Form.Item
-                                    label="Discount"
-                                    name={"Discount"}
-
-                                >
-
-                                    <InputNumber placeholder='Input Discount' style={{ width: "100%" }} />
-
-                                </Form.Item>
-
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item
-                                    label="Disposit"
-                                    name={"Disposit"}
-
-                                >
-                                    <InputNumber placeholder='Input Disposit' style={{ width: "100%" }} />
-                                </Form.Item>
-                            </Col>
-
-
-                            <Col span={12}>
-                                <Form.Item
-                                    label="Processing"
-                                    name={"OrderStatus"}
-                                    rules={[
-                                        {
-                                            required: true,
-                                            message: 'Please choose Processing!',
-                                        },
-                                    ]}
-
-                                >
-                                    <Select placeholder="Please Select Processing" >
-                                        <Select.Option value="1">
-                                            <div style={{ display: "flex", }}><CiMoneyBill style={{ marginTop: "8px" }} color='green' /> <p style={{ marginLeft: "15px", fontWeight: "bold" }}>Paid</p></div>
-                                            {/* <p style={{fontWeight:"bold"}}>Paid</p> */}
-                                        </Select.Option>
-                                        <Select.Option value="2">
-                                            {/* <p style={{fontWeight:"bold"}}>Disposit</p> */}
-                                            <div style={{ display: "flex", }}><GiReceiveMoney style={{ marginTop: "8px" }} color='gray' /> <p style={{ marginLeft: "15px", fontWeight: "bold" }}>Disposit</p></div>
-                                        </Select.Option>
-                                        <Select.Option value="3">
-                                            {/* <p style={{fontWeight:"bold"}}>Cancel</p> */}
-                                            <div style={{ display: "flex", }}><IoMdCloseCircleOutline style={{ marginTop: "8px" }} color='red' /> <p style={{ marginLeft: "15px", fontWeight: "bold" }}>Cancel</p></div>
-                                        </Select.Option>
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                        <Row gutter={5}>
-
-
-                            <Col span={12}>
-                                <Form.Item
-                                    label="Status"
-                                    name={"Status"}
-                                    rules={[
-                                        {
-                                            required: true,
-                                            message: 'Please choose Status!',
-                                        },
-                                    ]}
-
-                                >
-                                    <Select defaultValue={"1"}>
-                                        <Select.Option value="1">
-                                            <div style={{ display: "flex", }}><SiTicktick style={{ marginTop: "8px" }} color='green' /> <p style={{ marginLeft: "15px", fontWeight: "bold" }}>Active</p></div>
-                                        </Select.Option>
-                                        <Select.Option value="0">
-                                            <div style={{ display: "flex", }}><IoRadioButtonOn style={{ marginTop: "8px" }} color='red' /> <p style={{ marginLeft: "15px", fontWeight: "bold" }}>Inactive</p></div>
-                                        </Select.Option>
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-
-                        </Row>
-
-
-                        <Row gutter={5}>
-                            {/* <Col span={12}>
-                                <Form.Item
-                                label="Address"
-                                name={"Address"}
-                            >
-                                <Input.TextArea placeholder='Address' style={{width:"100%"}}/>
-                                
-                            </Form.Item>
-
-                            </Col> */}
-
-                            {/* <Col span={12}>
-                                <Form.Item
-                                label="Status"
-                                name={"Status"}
-                                rules={[
-                                    {
-                                    required: true,
-                                    message: 'Please choose Status!',
-                                    },
-                                ]}
-                                
-                            >
-                                <Select defaultValue={"1"}>
-                                    <Select.Option value="1">
-                                        Actived
-                                    </Select.Option>
-                                    <Select.Option value="0">
-                                        InActived
-                                    </Select.Option>
-                                </Select>
-                            </Form.Item>
-                            </Col> */}
-                        </Row>
-
-
-
-
-                        <Form.Item style={{ textAlign: "right" }}>
-                            <Space >
-                                {/* <Button onClick={onCloseModal} danger><span style={{width:"30px"}}><IoMdCloseCircleOutline style={{marginLeft:"5px",fontSize:"20px"}}/></span></Button> */}
-                                <Button type='primary' htmlType='submit'>{formCat.getFieldValue("Id") == null ? <span style={{ width: "80px" }}><LuSaveAll style={{ marginLeft: "30px", fontSize: "22px" }} /></span> : <span style={{ width: "80px" }}><RxUpdate style={{ marginLeft: "30px", fontSize: "22px" }} /></span>}</Button>
-                            </Space>
-                        </Form.Item>
-                    </Form>
-
-                </Modal>
+              
 
             </div>
 

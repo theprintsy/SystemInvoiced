@@ -38,11 +38,16 @@ app.get("/send-to-telegram", (req, res) => {
         i.qtyTotal, 
         i.discount, 
         i.disposit, 
+        i.discountPercentage, 
         i.finalAmount,
+        i.currency, -- Include currency
         i.CreateAt
       FROM invoice_details i
       JOIN customers c ON i.customerId = c.id
       ORDER BY i.id DESC LIMIT 1`; // Fetch last 1 invoices
+
+
+     
 
   db.query(query, async (err, results) => {
     if (err) {
@@ -56,11 +61,12 @@ app.get("/send-to-telegram", (req, res) => {
 
     let message = `📖 *New Invoice Saved:*\n`;// i need show Id or clientName one one after save data show in telegram 
     results.forEach((invoice, index) => {
+      const currencySymbol = invoice.currency === "KHR" ? "៛" : "$";
       // Determine the status emoji with labels
       let statusEmoji = "⚪ Unknown"; // Default (if status is unknown)
       if (invoice.customerStatus == 1) statusEmoji = "🟢 Paid";
       else if (invoice.customerStatus == 2) statusEmoji = "🟡 Disposit";
-      else if (invoice.customerStatus == 3) statusEmoji = "🔴 Cancel";
+      else if (invoice.customerStatus == 3) statusEmoji = "🔴 Unpaid";
 
       // Format the createdAt date using Moment.js
       let formattedDate = moment(invoice.CreateAt).format('MMMM Do YYYY, h:mm:ss a');
@@ -81,15 +87,31 @@ app.get("/send-to-telegram", (req, res) => {
       // Ensure `itemsArray` is an array before looping
       if (Array.isArray(itemsArray) && itemsArray.length > 0) {
         itemsArray.forEach((item, index) => {
-          message += `\n   ${index + 1}. ${item.name} - ${item.qty} x $${item.price.toFixed(2)} = $${item.amount.toFixed(2)}`;
+          const itemTotal = item.qty * item.price;
+          // const formattedQty = invoice.currency === "KHR" ? Number(item.qty).toLocaleString() : Number(item.qty).toFixed(2);
+          const formattedPrice = invoice.currency === "KHR" ? Number(item.price).toLocaleString() : Number(item.price).toFixed(2);
+          const formattedTotal = invoice.currency === "KHR" ? Number(itemTotal).toLocaleString() : Number(itemTotal).toFixed(2);
+          // message += `\n   ${index + 1}. ${item.name} - ${item.qty} x ${currency === "៛" ? Number(item.qty).toLocaleString() : Number(item.qty).toFixed(2)} ${currency} ${item.price.toFixed(2)} = $${item.amount.toFixed(2)}`;
+          message += `\n   ${index + 1}. ${item.name} - (${item.qty}) x  ${formattedPrice} ${currencySymbol}= ${formattedTotal} ${currencySymbol} `;
         });
       } else {
         message += `\n   ❌ No items found or invalid format`;
       }
+      
       message += `\n*TotalQty:* ${invoice.qtyTotal} Qty`;
-      message += `\n*Discount:* ${invoice.discount} %`;
-      message += `\n*Disposit:* ${invoice.disposit} $`;
-      message += `\n*FinalAmount:* ${invoice.finalAmount} $`;
+      const formattedDiscount = invoice.currency === "KHR" 
+      ? Number(invoice.discount).toLocaleString() + " ៛" 
+      : Number(invoice.discount).toFixed(2) + " $";
+      message += `\n*Discount:* ${formattedDiscount}`;
+      message += `\n*D-Percentage:* ${invoice.discountPercentage} %`;
+      const formattedDisposit = invoice.currency === "KHR" 
+      ? Number(invoice.disposit).toLocaleString() + " ៛" 
+      : Number(invoice.disposit).toFixed(2) + " $";
+      message += `\n*Disposit:* ${formattedDisposit}`;
+      const formattedFinalAmount = invoice.currency === "KHR" 
+      ? Number(invoice.finalAmount).toLocaleString()  // Use locale format for KHR
+      : Number(invoice.finalAmount).toFixed(2);     
+      message += `\n*FinalAmount:* ${formattedFinalAmount} ${currencySymbol} `;
       message += `\n*CreatedAt:* ${formattedDate}`; // Properly formatted date
       message += `\n📌 *Proccess Pay:* ${statusEmoji}\n───────────────────`;
     });
@@ -165,45 +187,145 @@ app.get('/items/:customerId', (req, res) => {
 });
 
 // Save Invoice
+// app.post('/invoices', (req, res) => {
+//   const { customerId, items, discount, disposit } = req.body;
+//   let qtyTotal = items.reduce((sum, item) => sum + item.qty, 0);
+//   let subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+//   let discountAmount = (subtotal * discount) / 100;
+//   let finalAmount = subtotal - discountAmount - disposit;
+
+//   db.query('INSERT INTO invoice_details (customerId, items, qtyTotal, discount, disposit, finalAmount) VALUES (?, ?, ?, ?, ?, ?)',
+//     [customerId, JSON.stringify(items), qtyTotal, discount, disposit, finalAmount],
+//     (err, result) => {
+//       if (err) return res.status(500).json({ error: err.message });
+//       res.json({ success: true, finalAmount });
+//     }
+//   );
+// });
+
+
 app.post('/invoices', (req, res) => {
-  const { customerId, items, discount, disposit } = req.body;
+  const { customerId, items, discount, disposit, currency } = req.body; // Accept currency
   let qtyTotal = items.reduce((sum, item) => sum + item.qty, 0);
   let subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
-  let discountAmount = (subtotal * discount) / 100;
-  let finalAmount = subtotal - discountAmount - disposit;
+  // let discountAmount = (subtotal * discount) / 100;
+  // let discountAmount = ((discount / subtotal) * 100).toFixed(2); 
+  let discountPercentage = subtotal > 0 ? ((discount / subtotal) * 100).toFixed(2) : "0.00";   
+  // let finalAmount = subtotal - discountAmount - disposit;
+  let finalAmount = subtotal - discount;
 
-  db.query('INSERT INTO invoice_details (customerId, items, qtyTotal, discount, disposit, finalAmount) VALUES (?, ?, ?, ?, ?, ?)',
-    [customerId, JSON.stringify(items), qtyTotal, discount, disposit, finalAmount],
+  db.query(
+    'INSERT INTO invoice_details (customerId, items, qtyTotal, discount,discountPercentage, disposit, finalAmount, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [customerId, JSON.stringify(items), qtyTotal, discount,discountPercentage, disposit, finalAmount, currency], // Store currency
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, finalAmount });
+      res.json({ success: true,discountPercentage: discountPercentage + "%", finalAmount, currency});
     }
   );
 });
+
+
+
+
+// app.get("/invoices/getlist", (req, res) => {
+//   const query = `
+//       SELECT 
+//         i.id AS invId, 
+//         c.name AS customerName, 
+//         c.orderStatus,
+//         c.status,
+//         i.items, 
+//         i.qtyTotal, 
+//         i.discount, 
+//         i.disposit, 
+//         i.finalAmount,
+//         i.CreateAt
+//       FROM invoice_details i
+//       JOIN customers c ON i.customerId = c.id
+//       ORDER BY i.id DESC  `;
+
+//   db.query(query, (err, result) => {
+//     if (err) {
+//       return res.status(500).json({ error: err.message });
+//     }
+//     res.json(result);
+//   });
+// });
+
+// app.get("/invoices/getlist", (req, res) => {
+//   const query = `
+//       SELECT 
+//         i.id AS invId, 
+//         c.name AS customerName, 
+//         c.orderStatus,
+//         c.status,
+//         i.items, 
+//         i.qtyTotal, 
+//         i.discount, 
+//         i.discountPercentage, 
+//         i.disposit, 
+//         i.finalAmount,
+//         i.currency, -- Include currency
+//         i.CreateAt
+//       FROM invoice_details i
+//       JOIN customers c ON i.customerId = c.id
+//       WHERE i.deleted_at IS NULL  -- Only show active invoices
+//       ORDER BY i.id DESC`;
+
+//   db.query(query, (err, result) => {
+//     if (err) {
+//       return res.status(500).json({ error: err.message });
+//     }
+//     res.json(result);
+//   });
+// });
+
 app.get("/invoices/getlist", (req, res) => {
-  const query = `
+  const { id, orderStatus } = req.query; // Get filters from query parameters
+
+  let query = `
       SELECT 
-        i.id AS invId, 
-        c.name AS customerName, 
-        c.orderStatus,
-        c.status,
-        i.items, 
-        i.qtyTotal, 
-        i.discount, 
-        i.disposit, 
-        i.finalAmount,
-        i.CreateAt
+          i.id AS invId, 
+          c.name AS customerName, 
+          c.orderStatus,
+          c.status,
+          i.items, 
+          i.qtyTotal, 
+          i.discount, 
+          i.discountPercentage, 
+          i.disposit, 
+          i.finalAmount,
+          i.currency, 
+          i.CreateAt
       FROM invoice_details i
       JOIN customers c ON i.customerId = c.id
-      ORDER BY i.id DESC  `;
+      WHERE i.deleted_at IS NULL
+  `;
 
-  db.query(query, (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(result);
+  const queryParams = [];
+
+  if (id) {
+      query += ` AND i.id = ?`;
+      queryParams.push(id);
+  }
+
+  if (orderStatus) {
+      query += ` AND c.orderStatus = ?`; // Filter by orderStatus
+      queryParams.push(orderStatus);
+  }
+
+  query += ` ORDER BY i.id DESC`; // Keep sorting
+
+  db.query(query, queryParams, (err, result) => {
+      if (err) {
+          return res.status(500).json({ error: err.message });
+      }
+      res.json(result);
   });
 });
+
+
+
 
 app.get("/invoices/getlist/:id", (req, res) => {
   const invoiceId = req.params.id; // Get the invoice ID from the URL
@@ -238,49 +360,112 @@ app.get("/invoices/getlist/:id", (req, res) => {
 
 
 // Delete Invoice by ID
-app.delete("/invoices/:id", (req, res) => {
+// app.delete("/invoices/:id", (req, res) => {
+//   const { id } = req.params;
+
+//   db.query("DELETE FROM invoice_details WHERE id = ?", [id], (err, result) => {
+//     if (err) return res.status(500).json({ error: err.message });
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ message: "Invoice not found" });
+//     }
+
+//     res.json({ message: "Invoice deleted successfully" });
+//   });
+// });
+
+
+
+app.delete("/invoices/:id",  (req, res) => {
   const { id } = req.params;
+  try {
+      const [result] = db.query(`
+          UPDATE invoice_details 
+          SET deleted_at = NOW() 
+          WHERE id = ? AND deleted_at IS NULL
+      `, [id]);
 
-  db.query("DELETE FROM invoice_details WHERE id = ?", [id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ message: "Invoice not found or already deleted" });
+      }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Invoice not found" });
+      res.json({ message: "Invoice moved to trash successfully" });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+app.get("/invoices/trash", (req, res) => {
+  db.query(
+    `SELECT 
+        i.id AS invId, 
+        c.name AS customerName, 
+        c.orderStatus,
+        i.items, 
+        i.qtyTotal, 
+        i.finalAmount, 
+        i.currency, 
+        i.deleted_at
+    FROM invoice_details i
+    JOIN customers c ON i.customerId = c.id
+    WHERE i.deleted_at IS NOT NULL  -- Only show deleted invoices
+    ORDER BY i.deleted_at DESC`,
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(results);
     }
-
-    res.json({ message: "Invoice deleted successfully" });
-  });
+  );
 });
 
 
 
 
-// Fetch invoices (with optional month filter)
-// app.get("/api/invoices", (req, res) => {
-//   const month = req.query.month; // e.g., 'March'
-//   let sql = "SELECT * FROM invoice_details";
 
-//   if (month) {
-//       sql = `SELECT * FROM invoice_details WHERE MONTH(CreateAt) = ?`;
-//       const monthIndex = new Date(Date.parse(month + " 1, 2024")).getMonth() + 1;
+app.put("/invoices/restore/:id", (req, res) => {
+  const { id } = req.params;
 
-//       db.query(sql, [monthIndex], (err, results) => {
-//           if (err) {
-//               res.status(500).json({ error: err.message });
-//           } else {
-//               res.json(results);
-//           }
-//       });
-//   } else {
-//       db.query(sql, (err, results) => {
-//           if (err) {
-//               res.status(500).json({ error: err.message });
-//           } else {
-//               res.json(results);
-//           }
-//       });
-//   }
-// });
+  db.query(
+      `UPDATE invoice_details 
+       SET deleted_at = NULL 
+       WHERE id = ? AND deleted_at IS NOT NULL`,
+      [id],
+      (err, result) => {
+          if (err) return res.status(500).json({ error: err.message });
+
+          if (result.affectedRows === 0) {
+              return res.status(404).json({ message: "Invoice not found or already restored" });
+          }
+
+          res.json({ message: "Invoice restored successfully" });
+      }
+  );
+});
+
+
+app.delete("/invoices/trash/:id", (req, res) => {
+  const { id } = req.params;
+
+  db.query(
+      `DELETE FROM invoice_details 
+       WHERE id = ? AND deleted_at IS NOT NULL`,
+      [id],
+      (err, result) => {
+          if (err) return res.status(500).json({ error: err.message });
+
+          if (result.affectedRows === 0) {
+              return res.status(404).json({ message: "Invoice not found or already deleted permanently" });
+          }
+
+          res.json({ message: "Invoice permanently deleted" });
+      }
+  );
+});
+
+
+
+
 
 
 app.get("/export-data", (req, res) => {
@@ -302,6 +487,7 @@ app.get("/export-data", (req, res) => {
         i.discount, 
         i.disposit, 
         i.finalAmount,
+        i.currency, -- Include currency
         i.CreateAt
 FROM invoice_details i
 JOIN customers c ON i.customerId = c.id
@@ -460,6 +646,46 @@ app.post("/exchangerate-riel", (req, res) => {
     res.json({ message: "exchangerate added", id: result.insertId });
   });
 });
+
+// app.get('/invoices/total-by-currency', (req, res) => {
+//   try {
+//       const [rows] = db.execute(`
+//           SELECT currency, SUM(finalAmount) AS total FROM invoice_details GROUP BY currency
+//       `);
+//       res.json(rows);
+//   } catch (error) {
+//       res.status(500).json({ error: error.message });
+//   }
+// });
+
+
+app.get('/invoices/total-by-currency', (req, res) => {
+  db.query(' SELECT currency, SUM(finalAmount) AS total FROM invoice_details GROUP BY currency', (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.get("/dashboard", (req, res) => {
+  const query = `
+      SELECT 
+          SUM(CASE WHEN currency = 'KHR' THEN finalAmount ELSE 0 END) AS totalKHR,
+          SUM(CASE WHEN currency = 'USD' THEN finalAmount ELSE 0 END) AS totalUSD
+      FROM invoice_details
+      WHERE deleted_at IS NULL
+  `;
+
+  db.query(query, (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      res.json({
+          KHR: result[0].totalKHR || 0,
+          USD: result[0].totalUSD || 0
+      });
+  });
+});
+
+
 
 
 

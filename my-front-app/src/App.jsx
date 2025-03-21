@@ -9,6 +9,7 @@ import DasboardScreen from './Page/DashboardScreen';
 import UserScreen from './Page/UserScreen';
 import Exchangerate from './Page/ExchangerateScreen';
 import TempleteScreen from './Page/TempleteScreen';
+import DataBackUpScreen from './Page/DataBackUpScreen';
 
 function App() {
 
@@ -24,6 +25,7 @@ function App() {
         <Route path='user-control' element={<UserScreen/>}/>
         <Route path='exchangerate' element={<Exchangerate/>}/>
         <Route path='templete-cos' element={<TempleteScreen/>}/>
+        <Route path='data-backup' element={<DataBackUpScreen/>}/>
         </Route>
       </Routes>
     </BrowserRouter>

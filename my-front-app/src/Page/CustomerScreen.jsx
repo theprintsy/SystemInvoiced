@@ -44,12 +44,12 @@ const Customer = () => {
         },
     
         {
-          title: "Discount(%)",
+          title: "Discount",
           dataIndex: "discount",
           key: "qtyTotal",
         },
         {
-          title: "Disposit($)",
+          title: "Disposit",
           dataIndex: "disposit",
           key: "discount",
         },
@@ -57,7 +57,7 @@ const Customer = () => {
           title: "Proccess",
           dataIndex: "orderStatus",
           key: "disposit",
-           render: (value, item, index) => (value == 1 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "60px" }} color='green'> <span style={{ marginTop: "2.5px", fontSize: "16px" }}><CiMoneyBill /></span> Paid</Tag> : "" || value == 2 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "80px" }}><span style={{ marginTop: "2px", fontSize: "14px" }}><GiReceiveMoney /></span>Disposit</Tag> : "" || value == 3 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "70px" }} color='red'><span style={{ marginTop: "2px", fontSize: "14px" }}><IoMdCloseCircleOutline /></span>Cancel</Tag> : "")
+           render: (value, item, index) => (value == 1 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "60px" }} color='green'> <span style={{ marginTop: "2.5px", fontSize: "16px" }}><CiMoneyBill /></span> Paid</Tag> : "" || value == 2 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "80px" }}><span style={{ marginTop: "2px", fontSize: "14px" }}><GiReceiveMoney /></span>Disposit</Tag> : "" || value == 3 ? <Tag style={{ display: "flex", justifyContent: "space-between", width: "70px" }} color='red'><span style={{ marginTop: "2px", fontSize: "14px" }}><IoMdCloseCircleOutline /></span>Unpaid</Tag> : "")
         },
         {
           title: "Status",
@@ -171,7 +171,7 @@ const Customer = () => {
                 >
                     <option value={1}>Paid</option>
                     <option value={2}>Deposit</option>
-                    <option value={3}>Cancel</option>
+                    <option value={3}>Unpaid</option>
                 </select>
                 <select class="select-box"
                     value={form.status}
@@ -187,7 +187,7 @@ const Customer = () => {
             columns={columns}
             dataSource={customers}
             rowKey="invId"
-            pagination={false}
+            pagination={{ pageSize: 7 }}
             // bordered
           />
         </div>

@@ -6,13 +6,13 @@
     
 }
 .box-dash:nth-child(1){
-    background-color: rgb(194, 194, 194);
+    background-color: rgb(12, 67, 112);
 }
 .box-dash:nth-child(2){
-    background-color: rgb(91, 104, 103);
+    background-color: rgb(28, 19, 78);
 }
 .box-dash:nth-child(3){
-    background-color: rgb(73, 73, 73);
+    background-color: rgb(69, 62, 82);
 }
 .two-dash{
     margin-top: 12rem;
@@ -58,7 +58,7 @@
 .width-balence{
      font-family: Arial, Helvetica, sans-serif;
     width: 100%;
-    background-color: rgb(226, 186, 5);
+    background-color: rgb(19, 31, 136);
     display: flex;
     justify-content: space-between;
     /* height: 10rem; */
@@ -75,11 +75,7 @@
     /* background-color: rgb(65, 173, 23); */
     /* border-radius: 50%; */
 }
-.balence-icon span{
-    color: rgb(204, 173, 0);
 
-    
-}
 .balence-view{
     color: white;
     font-size: 3rem;

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { Table, Button, Space, Modal, Form, Select, Input, message, Tag, DatePicker, Row, Col, InputNumber, Image } from 'antd'
+import axios from "axios";
 import './MainScreen.css'
 // import Logo from '../asset/ISM COL (1).png'
 // import Logo from '../asset/logo.png'
-import Profile from '../assets/admin.png'
+import Profile from '../assets/pageProfile.png'
 import Logo from '../assets/the.png'
 // import { Config, getUserLogin, isLogin, logOut } from '../Config/support';
 import { LuLayoutDashboard } from "react-icons/lu";
@@ -22,6 +23,11 @@ import { MdDashboard } from "react-icons/md";
 import { FaSignOutAlt } from "react-icons/fa";
 import { MdCurrencyExchange } from "react-icons/md";
 import { MdOutlineSettingsSuggest } from "react-icons/md";
+import { FaTrashRestoreAlt } from "react-icons/fa";
+import { MdMoveDown } from "react-icons/md";
+import { FaTrashAlt } from "react-icons/fa";
+import { FcFullTrash } from "react-icons/fc";
+import { IoNotificationsCircleOutline } from "react-icons/io5";
 import {
   BranchesOutlined,
   DeploymentUnitOutlined,
@@ -48,7 +54,7 @@ function getItem(label, key, icon, children) {
 }
 const items = [
   getItem('Dashboard', '', <MdDashboard />),
-  getItem('Customer', 'customer', <RiCustomerService2Fill />),
+ 
   getItem('Add Item', 'add-item', <PiListPlusLight />),
 //   getItem('Add Item', 'addlist-item', <PiListPlusLight />),
   getItem('Invoice List', 'invoice-list', <LiaFileInvoiceSolid />),
@@ -58,21 +64,45 @@ const items = [
   //   // getItem('Alex', '5'),
   // ]),
  
-  getItem('Template', 'templete-cos', <GoProjectTemplate />),
+  
   getItem('Setting ', 'sub2', <MdOutlineSettingsSuggest />,
     [getItem('Exchange Rate', 'exchangerate', <MdCurrencyExchange />),
+      getItem('Customer', 'customer', <RiCustomerService2Fill />),
+      getItem('Template', 'templete-cos', <GoProjectTemplate />),
       // getItem('User', 'user-control', <LiaUsersCogSolid />),
  
     ]),
 ];
 const LayoutScreen = () => {
 //   const user = getUserLogin();
+  const [trash, setTrash] = useState([]);
   const navigate = useNavigate()
+
+
+
+
+
+
+  const handleBackUp = () =>{
+    navigate("data-backup");
+  }
   useEffect(() => {
+    fetchTrash();
     // if (!isLogin()) {
     //   navigate("login");
     // }
   }, [])
+  const fetchTrash = async () => {
+    try {
+        const { data } = await axios.get("http://localhost:5000/invoices/trash");
+        console.log("Trash Data:", data); // Debugging log
+        setTrash(data); // ✅ Set the correct array
+    } catch (error) {
+        console.error("Error fetching trash:", error);
+        setTrash([]); // Prevent errors by setting an empty array
+    }
+};
+
   const [collapsed, setCollapsed] = useState(false);
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -105,7 +135,7 @@ const LayoutScreen = () => {
         title: "Log out",
         content: (
           <div>
-            <h1 class="font-mono tracking-tight text-blue-600 dark:text-sky-400 text-lg">!Errrrr</h1>
+            <h1 class="font-mono tracking-tight text-blue-600 dark:text-sky-400 text-lg">!</h1>
             <p class="text-center p-2">Are you sure you want to log out?</p>
           </div>
         ),
@@ -134,7 +164,7 @@ const LayoutScreen = () => {
     >
       <Sider style={{ backgroundColor: 'black' }} collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
         <div className="demo-logo-vertical" />
-        <div className='inv-sty' ><Link to='/'>Invoice IMS</Link></div>
+        <div className='inv-sty' ><Link to='/'>The Print Software</Link></div>
         <Menu style={{ backgroundColor: 'black', color: 'white', fontFamily: 'Verdana, sans-serif' }} theme="dark" defaultSelectedKeys={['1']} mode="inline" items={items} onClick={onClickmenu}  >
         </Menu>
       </Sider>
@@ -150,16 +180,22 @@ const LayoutScreen = () => {
               {/* <img src={Logo} alt="" /> */}
               <img src={Logo} alt="" />
             </div>
+            
             <div className='user'>
+              <div className='trash-icon'>
+                
+              <span><IoNotificationsCircleOutline  onClick={handleBackUp}/></span>
+              <span><p>{trash?.length || null}</p></span>
+              </div>
               <div className='profile-name'>
                 {/* <img src={Config.Image_Part + user?.Image} alt="" /> */}
                 <img src={Profile} alt="" />
               </div>
               <div className='title-user'>
                 {/* <h2 class="ont-mono ">{user?.Name}</h2> */}
-                <h2 class="ont-mono ">Admin</h2>
+                <h2 class="ont-mono ">Sou Sunheng(SSH)</h2>
               </div>
-              <Button onClick={onClickmenu1} className='out-btn'> <MdLogout style={{ color: "red" }} /></Button>
+              {/* <Button onClick={onClickmenu1} className='out-btn'> <MdLogout style={{ color: "red" }} /></Button> */}
             </div>
           </div>
         </Header>
@@ -186,7 +222,7 @@ const LayoutScreen = () => {
             color: "#c2c2c2"
           }}
         >
-          Invoice management System ©{new Date().getFullYear()} Created by <span style={{ color: 'rgb(0, 123, 223)' }}><a href='https://t.me/Ren_Thai_Rath'>Ren Thai Rath</a></span>
+          Invoice management System ©{new Date().getFullYear()} Created by <span style={{ color: 'rgb(0, 123, 223)' }}><a href='https://t.me/theprint2024'>The Print Groups</a></span>
         </Footer>
       </Layout>
     </Layout>

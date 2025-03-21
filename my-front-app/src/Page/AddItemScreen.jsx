@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button, Input, Select, Space, Table,message} from 'antd';
+import { Button, Input, Select, Space, Table, message } from 'antd';
 import './add.css'
 import { AiOutlineDelete } from 'react-icons/ai';
 import { MdOutlineViewInAr } from 'react-icons/md';
@@ -17,14 +17,27 @@ const AddItemScreen = () => {
   const [newItem, setNewItem] = useState({ name: '', qty: "", price: "" });
   const [editingIndex, setEditingIndex] = useState(null);
 
-
+  const [currency, setCurrency] = useState("USD"); // and set declea $ and ៛
+  const currencySymbol = currency === "KHR" ? "៛" : "$";
 
   const [loading, setLoading] = useState(false);
   const [message1, setMessage] = useState("");
 
-  
-  
 
+  const [form, setForm] = useState({
+    name: "",
+    discount: 0,
+    disposit: 0,
+    orderStatus: 1,
+    status: 1,
+  });
+
+  const [isNewCustomer, setIsNewCustomer] = useState(false);
+  //   const khmerToArabic = (khmerNum) => {
+  //     const khmerDigits = "០១២៣៤៥៦៧៨៩";
+  //     const arabicDigits = "0123456789";
+  //     return khmerNum.replace(/[០-៩]/g, (digit) => arabicDigits[khmerDigits.indexOf(digit)]);
+  // };
 
 
   const columns = [
@@ -53,12 +66,15 @@ const AddItemScreen = () => {
       key: "qtyTotal",
     },
     {
-      title: "Price ($)",
+      title: `Price (${currency})`,
       dataIndex: "price",
       key: "discount",
+      render: (value, item, index) => (
+        <div>{item.price.toLocaleString()}</div>
+      )
     },
     {
-      title: "Amount ($)",
+      title: `Amount (${currency})`,
       dataIndex: "amount",
       key: "disposit",
       render: (value, item, index) => (
@@ -71,25 +87,22 @@ const AddItemScreen = () => {
       key: "act",
       render: (value, item, index) => (
         <Space>
-           <Button onClick={() => deleteItem(index)} type='primary' danger  ><span ><AiOutlineDelete /> </span></Button>
-          <Button onClick={() => editItem(index)}color="cyan" variant="dashed"  ><span ><AiFillEdit /> </span></Button>
-          
-           
+          <Button onClick={() => deleteItem(index)} type='primary' danger  ><span ><AiOutlineDelete /> </span></Button>
+          <Button onClick={() => editItem(index)} color="cyan" variant="dashed"  ><span ><AiFillEdit /> </span></Button>
+
+
         </Space>
-    )
+      )
     },
 
   ];
-
-
-
 
 
   const khriel = async () => {
     const res = await axios.get("http://localhost:5000/exchangerate-riel");
     setRiel(res.data);
     console.log(res.data)
-};
+  };
 
 
 
@@ -107,33 +120,38 @@ const AddItemScreen = () => {
       .catch((error) => console.error("Error fetching invoices:", error));
   }, []);
 
+
+
   const handleCustomerChange = (e) => {
     const customerId = e.target.value;
-    const customer = customers.find(c => c.id === parseInt(customerId));
-    setSelectedCustomer(customer);
-    setItems([]);
+
+    if (customerId === "new") {
+      // User wants to add a new customer
+      setSelectedCustomer(null);
+      setForm({ ...form, name: "", discount: 0, disposit: 0 }); // Reset form fields
+      setIsNewCustomer(true);
+    } else {
+      // Existing customer selected
+      const customer = customers.find(c => c.id === parseInt(customerId));
+      setSelectedCustomer(customer);
+      setForm({
+        ...form,
+        name: customer.name,
+        discount: customer.discount,
+        disposit: customer.disposit
+      });
+      setIsNewCustomer(false);
+    }
+
+    setItems([]); // Reset items when customer changes
   };
 
-  // const addItem = () => {
-  //   if (newItem.name && newItem.qty > 0 && newItem.price > 0) {
-  //     const updatedItem = { ...newItem, amount: newItem.qty * newItem.price };
-  //     if (editingIndex !== null) {
-  //       const updatedItems = [...items];
-  //       updatedItems[editingIndex] = updatedItem;
-  //       setItems(updatedItems);
-  //       setEditingIndex(null);
-  //     } else {
-  //       setItems([...items, updatedItem]);
-  //     }
-  //     setItems([...items, { ...newItem, amount: newItem.qty * newItem.price }]);
-  //     setNewItem({ name: '', qty: "", price: "" });
-  //   }
-  // };
+
 
   const addItem = () => {
     if (newItem.name && newItem.qty > 0 && newItem.price > 0) {
       const updatedItem = { ...newItem, amount: newItem.qty * newItem.price };
-  
+
       if (editingIndex !== null) {
         // Update existing item
         const updatedItems = [...items];
@@ -144,12 +162,12 @@ const AddItemScreen = () => {
         // Add new item
         setItems([...items, updatedItem]);
       }
-  
+
       // Reset newItem input fields
       setNewItem({ name: "", qty: "", price: "" });
     }
   };
-  
+
 
 
   const deleteItem = (index) => {
@@ -162,135 +180,181 @@ const AddItemScreen = () => {
   };
 
   const calculateTotal = () => {
-    
-    const subtotal = items.reduce((acc, item) => acc + item.amount, 0);
-    const discount = selectedCustomer ? (subtotal * selectedCustomer.discount) / 100 : 0;
-    const disposit = selectedCustomer ? selectedCustomer.disposit : 0;
-    return subtotal - discount - disposit;
-    
+    const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+
+    if (!selectedCustomer && !isNewCustomer) return subtotal; // If no customer, return subtotal
+
+    // Use selected customer's discount/disposit or the input fields for new customer
+    const discount = (isNewCustomer ? form.discount : selectedCustomer?.discount || 0);
+    // const disposit = isNewCustomer ? form.disposit : selectedCustomer?.disposit || 0;
+
+    return subtotal - discount;
   };
+
+
+
   const calculatekh = () => {
-    const kh = riel.length > 0 ? riel[0].khriel : 4000; // Use 1 if no exchange rate is found
-    return  roundToNearest100(calculateTotal() * kh);
-    
+    const kh = riel.length > 0 ? riel[0].khriel : 4000; // Default exchange rate
+    const total = calculateTotal();
+
+    console.log("Total before conversion:", total);
+    console.log("Selected currency:", currency);
+    console.log("Exchange rate:", kh);
+
+    if (!total || isNaN(total)) {
+      console.error("Error: calculateTotal() returned an invalid value.");
+      return 0;
+    }
+
+    const convertedValue = currency === "KHR" ? total / kh : total * kh;
+    console.log("Final Converted Value:", convertedValue);
+
+    return currency === "USD"
+      ? convertedValue.toLocaleString()
+      : parseFloat(convertedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })); // Return as a number for USD
   };
-  const roundToNearest100 = (amount) => {
-    return Math.round(amount / 100) * 100;
-};
 
 
 
 
-
-
-  // const submitInvoice = () => {
-  //   if (!selectedCustomer || items.length === 0) {
-  //     alert('Please select a customer and add items.');
-  //     return;
-  //   }
-
-  //   axios.post('http://localhost:5000/invoices', {
-  //     customerId: selectedCustomer.id,
-  //     items,
-  //     discount: selectedCustomer.discount,
-  //     disposit: selectedCustomer.disposit
-  //   }).then(response => {
-  //     alert('Invoice Save successfully! Final Amount: $' + response.data.finalAmount);
-  //     // message.success("Invoice submitted successfully! Final Amount:"+ response.data.finalAmount);
-  //     setItems([]);
-  //     setSelectedCustomer(null);
-  //   }).catch(error => console.error('Error submitting invoice:', error));
-  // };
   const submitInvoice = async () => {
-    // if (!selectedCustomer || items.length === 0) {
-    //   alert('Please select a customer and add items.');
-    //   return;
-    // }
     setLoading(true);
     setMessage("");
 
+    try {
+      let customerId = selectedCustomer?.id;
 
-    try {  
-      
-        // 1️⃣ Save invoice to database
-        const response = await axios.post("http://localhost:5000/invoices", {
-            customerId: selectedCustomer.id,
-            items,
-            discount: selectedCustomer.discount,
-            disposit: selectedCustomer.disposit
+      // 1️⃣ If it's a new customer, save it first
+      if (isNewCustomer) {
+        const customerResponse = await axios.post("http://localhost:5000/customers", {
+          name: form.name,
+          discount: form.discount,
+          disposit: form.disposit,
+          orderStatus: form.orderStatus,
+          status: form.status,
         });
 
-        // alert('Invoice saved successfully! Final Amount: $' + response.data.finalAmount);
-        message.success('Invoice saved successfully! Final Amount: $' + response.data.finalAmount);
-     
-        setItems([]);
-        setSelectedCustomer(null);
+        customerId = customerResponse.data.id; // Get new customer ID
+      }
 
-        // 2️⃣ Send the invoice data to Telegram
-        const telegramResponse = await axios.get("http://localhost:5000/send-to-telegram");
-        setMessage(telegramResponse.data.message);
+      // 2️⃣ Save invoice to database
+      const response = await axios.post("http://localhost:5000/invoices", {
+        customerId,
+        items,
+        discount: form.discount,
+        disposit: form.disposit,
+        currency,
+      });
 
+      message.success("Invoice saved successfully! Final Amount: $" + response.data.finalAmount);
+
+      setItems([]);
+      setSelectedCustomer(null);
+      setIsNewCustomer(false);
+      setForm({ name: "", discount: 0, disposit: 0, orderStatus: 1, status: 1 });
+
+      // 3️⃣ Send invoice data to Telegram
+      const telegramResponse = await axios.get("http://localhost:5000/send-to-telegram");
+      setMessage(telegramResponse.data.message);
     } catch (error) {
-        console.error("🔥 Error Details:", error.response ? error.response.data : error.message);
-        setMessage("❌ Failed to save or send data."); 
+      console.error("🔥 Error Details:", error.response ? error.response.data : error.message);
+      setMessage("❌ Failed to save or send data.");
     }
 
     setLoading(false);
-};
-
-
-
-
-
+  };
 
 
 
   return (
     <>
       <div>
-        <div  class="flex justify-between">
+        <div class="flex justify-between">
           <div>
-          <label className='text'>Customer: </label>
-          {/* <select className='select-cs' onChange={handleCustomerChange} required >
-            <option value="" >Please Select Customer</option>
-            {customers.slice().sort((a, b) => b.id - a.id).slice(0, 5).map(customer => (
-              <option key={customer.id} value={customer.id} >
-                {customer.id}. {customer.name} (Discount: {customer.discount}%, Disposit: ${customer.disposit})
-              </option>
-            ))}
-          </select> */}
-         <select className="select-cs" onChange={handleCustomerChange} required>
-  <option value="">Please Select Customer</option>
-  {[
-    // Sort by ID descending and take the last 10 customers (excluding ID 1)
-    ...customers
-      .filter(customer => customer.id !== 1) // Exclude ID 1 initially
-      .sort((a, b) => b.id - a.id) // Sort by highest ID
-      .slice(0, 2), // Limit to 10 customers
-    // Add ID 1 at the bottom if it exists
-    ...customers.filter(customer => customer.id === 12)
-  ].map((customer,index) => (
-    <option key={customer.id} value={customer.id}>
-      {index+1}. {customer.name} (Discount: {customer.discount}%, Disposit: ${customer.disposit})
-    </option>
-  ))}
-</select>
+            <label className='text'>Customer: </label>
+            <select className="select-cs" onChange={handleCustomerChange} required>
+
+              <option value="">Please Select Customer</option>
+              <option class="option-add" value="new">Add New Customer</option>
+              {[
+
+                ...customers
+                  .filter(customer => customer.id !== 1)
+                  .sort((a, b) => b.id - a.id) // Sort by highest ID
+                  .slice(0, 2), // Limit to 10 customers
+
+                ...customers.filter(customer => customer.id === 12)
+              ].map((customer, index) => (
+                <option key={customer.id} value={customer.id}>
+                  {index + 1}. {customer.name} (Discount: {customer.discount}, Disposit: {customer.disposit})
+                </option>
+              ))}
+              {/* <option value="new">Add New Customer</option> */}
+            </select>
+            <label className='text ml-5'>Currency: </label>
+            <select className="select-riel" onChange={(e) => setCurrency(e.target.value)} value={currency}>
+              <option value="USD">USD</option>
+              <option value="KHR">KHR</option>
+            </select>
+
+            {isNewCustomer && (
+              <>
+                <div className='flex mt-7 ml-25 w-300' >
+                  <label className='text mt-2 mr-4'>Name: </label> <Input
+                    type="text"
+                    placeholder="Name"
+
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
+                  <label className='text mt-2 mr-2'>Discount </label>  <Input
+                    type="number"
+                    placeholder="Discount"
+                    value={form.discount}
+                    onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })}
+                  />
+                  <label className='text mt-2 mr-2'>Disposit </label><Input
+                    type="number"
+                    placeholder="Disposit"
+                    value={form.disposit}
+                    onChange={(e) => setForm({ ...form, disposit: Number(e.target.value) })}
+                  />
+                  <select class="select-box ml-5"
+                    value={form.orderStatus}
+                    onChange={(e) => setForm({ ...form, orderStatus: Number(e.target.value) })}
+                  >
+                    <option value={1}>Paid</option>
+                    <option value={2}>Deposit</option>
+                    <option value={3}>Unpaid</option>
+                  </select>
+                  <select class="select-box ml-5"
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: Number(e.target.value) })}
+                  >
+                    <option value={1}>Active</option>
+                    <option value={2}>Inactive</option>
+                  </select>
+                </div>
+              </>
+            )}
+
 
 
           </div>
           {/* <div><Button onClick={submitInvoice}>Save Invoice</Button></div> */}
           <div>
-        <Button type="primary" ghost onClick={submitInvoice} disabled={!selectedCustomer || items.length === 0}  >
-            {loading ? "Saving..." : "Save Invoice"}<MdOutlineSaveAs />
-        </Button>
-        {/* {message && <p>{message}</p>} */}
-    </div>
+            <Button type="primary" ghost onClick={submitInvoice} disabled={!selectedCustomer && !isNewCustomer || items.length === 0}  >
+              {loading ? "Saving..." : "Save Invoice"}<MdOutlineSaveAs />
+            </Button>
+
+          </div>
         </div>
         <div class="m-auto w-300 flex gap-10 mt-10">
-        <label >Product Name</label><Input type="text" className='khmer-regular' placeholder="Item Name" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} />
-        <label >Quantity</label><Input type="number" placeholder="Qty" value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: Number(e.target.value) })} />
-        <label >Price</label><Input type="number" placeholder="Price" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: Number(e.target.value) })} />
-          <div class="p-1.5"><Button type='primary' onClick={addItem} disabled={!selectedCustomer}>{editingIndex !== null ? "Update Item" : "Add Item"}</Button></div>
+          <label >Product Name</label><Input type="text" className='khmer-regular' placeholder="Item Name" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} />
+          <label >Quantity</label><Input type="number" placeholder="Qty" value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: Number(e.target.value) })} />
+          <label >Price</label><Input type="number" placeholder="Price" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: Number(e.target.value) })} />
+          <div class="p-1.5"><Button type='primary' onClick={addItem} disabled={!selectedCustomer && !isNewCustomer}>{editingIndex !== null ? "Update Item" : "Add Item"}</Button></div>
         </div>
 
 
@@ -308,25 +372,15 @@ const AddItemScreen = () => {
           <div className="left-balence"></div>
           <div className="right-balence">
             <div className="title-balence"><p>Final Amount </p></div>
-            <div className="price-balence"><u>{calculateTotal().toLocaleString()}$</u></div>
-            <div className="title-balence"><p>KH RIEL </p></div>
-            <div className="price-balence"><u>{calculatekh().toLocaleString()}៛</u></div>
+
+            <div className="price-balence"><u>
+
+              {currency === "KHR" ? Number(calculateTotal()).toLocaleString() : Number(calculateTotal()).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}
+            </u></div>
+
+            <div className="price-balence"><u>{calculatekh()} {currency === "USD" ? "៛" : "$"}</u></div>
           </div>
         </div>
-        {/* <BarChart
-      series={[
-        { data: [35, 44, 24, 34] },
-        { data: [51, 6, 49, 30] },
-        { data: [15, 25, 30, 50] },
-        { data: [60, 50, 15, 25] },
-      ]}
-      height={290}
-      xAxis={[{ data: ['Q1', 'Q2', 'Q3', 'Q4'], scaleType: 'band' }]}
-      margin={{ top: 10, bottom: 30, left: 40, right: 10 }}
-    /> */}
-
-
-
 
 
 
