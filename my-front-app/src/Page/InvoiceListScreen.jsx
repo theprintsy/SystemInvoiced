@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Table, Button, Space, Modal, Form, Select, Input, message, Tag, DatePicker, Row, Col, InputNumber, Flex, Popconfirm } from 'antd'
+
 // import { request } from '../Config/request';
 import './PageScreen.css'
 // import { formartDateServer, formatDateClient } from '../Config/support';
@@ -51,40 +52,49 @@ const InvoiceListScreen = () => {
     const [orderStatus, setOrderStatus] = useState("");
     const [message1, setMessage] = useState("");
 
+    // const [form, setForm] = useState({
+    //     name: data.name || "",
+    //     orderStatus: data.orderStatus || "",
+    //     disposit: data.disposit || 0,
+    //     totalAmount: data.totalAmount || 0,
+    //     finalAmount: data.finalAmount || 0,
+    // });
+
     useEffect(() => {
+        fetchInvoices();
+        khriel()
        
-        if (!selectedMonth) {
-            setFilteredData([]);
-            if (data.length === 0)
-                fetchInvoices();
-            khriel()
+        // if (!selectedMonth) {
+        //     setFilteredData([]);
+        //     if (data.length === 0)
+               
 
             
-            return;
-        }
+        //     return;
+        // }
 
-        // Get selected month index (0-based)
-        const selectedMonthIndex = monthNames.indexOf(selectedMonth);
+        // // Get selected month index (0-based)
+        // const selectedMonthIndex = monthNames.indexOf(selectedMonth);
 
-        // Filter invoices that match the selected month
-        const filtered = data.filter((invoice) => {
-            if (!invoice.CreateAt) return false;
+        // // Filter invoices that match the selected month
+        // const filtered = data.filter((invoice) => {
+        //     if (!invoice.CreateAt) return false;
 
-            // Extract month from invoice date
-            const invoiceMonth = new Date(invoice.CreateAt).getMonth();
-            return invoiceMonth === selectedMonthIndex;
-        });
+        //     // Extract month from invoice date
+        //     const invoiceMonth = new Date(invoice.CreateAt).getMonth();
+        //     return invoiceMonth === selectedMonthIndex;
+        // });
 
-        setFilteredData(filtered);
-
-
-    }, [selectedMonth, data])
+        // setFilteredData(filtered);
 
 
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
+    }, []) //selectedMonth, data
+
+
+    // const monthNames = [
+    //     "January", "February", "March", "April", "May", "June",
+    //     "July", "August", "September", "October", "November", "December"
+    // ];
 
 
     const khriel = async () => {
@@ -115,7 +125,8 @@ const InvoiceListScreen = () => {
                     orderStatus: orderStatus || undefined, // Pass only if exists
                 },
             });
-
+          
+            //  console.log(response.data)
             setData(data); // Update invoices list
         } catch (error) {
             console.error("Error fetching invoice:", error);
@@ -241,119 +252,119 @@ const InvoiceListScreen = () => {
     // };
 
 
-    const handleExport = () => {
-        // Use filteredData if a month is selected; otherwise, export all data
-        let exportData = selectedMonth && filteredData.length > 0 ? filteredData : data;
+    // const handleExport = () => {
+    //     // Use filteredData if a month is selected; otherwise, export all data
+    //     let exportData = selectedMonth && filteredData.length > 0 ? filteredData : data;
 
-        if (!exportData || exportData.length === 0) {
-            alert("No data available for export.");
-            return;
-        }
+    //     if (!exportData || exportData.length === 0) {
+    //         alert("No data available for export.");
+    //         return;
+    //     }
 
-        let totalAmountKHR = 0;
-        let totalAmountUSD = 0;
+    //     let totalAmountKHR = 0;
+    //     let totalAmountUSD = 0;
 
-        exportData.forEach(invoice => {
-            const amount = parseFloat(invoice.finalAmount) || 0;
-            if (invoice.currency === "KHR") {
-                totalAmountKHR += amount;
-            } else if (invoice.currency === "USD") {
-                totalAmountUSD += amount;
-            }
-        });
+    //     exportData.forEach(invoice => {
+    //         const amount = parseFloat(invoice.finalAmount) || 0;
+    //         if (invoice.currency === "KHR") {
+    //             totalAmountKHR += amount;
+    //         } else if (invoice.currency === "USD") {
+    //             totalAmountUSD += amount;
+    //         }
+    //     });
 
-        const formattedData = exportData.map((invoice) => {
-            let itemsArray = [];
-            try {
-                itemsArray = typeof invoice.items === "string" ? JSON.parse(invoice.items) : invoice.items || [];
-            } catch (error) {
-                console.error("Error parsing items:", error);
-                itemsArray = [];
-            }
+    //     const formattedData = exportData.map((invoice) => {
+    //         let itemsArray = [];
+    //         try {
+    //             itemsArray = typeof invoice.items === "string" ? JSON.parse(invoice.items) : invoice.items || [];
+    //         } catch (error) {
+    //             console.error("Error parsing items:", error);
+    //             itemsArray = [];
+    //         }
 
-            const discount = parseFloat(invoice.discount) || 0;
-            const deposit = parseFloat(invoice.disposit) || 0;
-            const finalAmount = parseFloat(invoice.finalAmount) || 0;
+    //         const discount = parseFloat(invoice.discount) || 0;
+    //         const deposit = parseFloat(invoice.disposit) || 0;
+    //         const finalAmount = parseFloat(invoice.finalAmount) || 0;
 
-            const rowData = {
-                "No": invoice.invId ? `000-${invoice.invId}` : "N/A",
-                "Name": invoice.customerName || "N/A",
-                "Qty": invoice.qtyTotal || 0,
-                "Discount": invoice.currency === "USD"
-                    ? `${discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
-                    : `${discount.toLocaleString()} KHR`,
-                "D-Percentage(%)": invoice.discountPercentage || 0,
-                "Deposit": invoice.currency === "USD"
-                    ? `${deposit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
-                    : `${deposit.toLocaleString()} KHR`,
-                "Amount": invoice.currency === "USD"
-                    ? `${finalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
-                    : `${finalAmount.toLocaleString()} KHR`,
-                "Order": invoice.orderStatus === 1
-                    ? "Paid"
-                    : invoice.orderStatus === 2
-                        ? "Deposit"
-                        : invoice.orderStatus === 3
-                            ? "Unpaid"
-                            : "Unknown",
-                "Status": invoice.status === 1 ? "Active" : invoice.status === 2 ? "Inactive" : "Unknown",
-                "Out Time": invoice.CreateAt ? formatDateClient(invoice.CreateAt) : "N/A",
-                "For Month": selectedMonth || "All Data"
-            };
+    //         const rowData = {
+    //             "No": invoice.invId ? `000-${invoice.invId}` : "N/A",
+    //             "Name": invoice.customerName || "N/A",
+    //             "Qty": invoice.qtyTotal || 0,
+    //             "Discount": invoice.currency === "USD"
+    //                 ? `${discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+    //                 : `${discount.toLocaleString()} KHR`,
+    //             "D-Percentage(%)": invoice.discountPercentage || 0,
+    //             "Deposit": invoice.currency === "USD"
+    //                 ? `${deposit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+    //                 : `${deposit.toLocaleString()} KHR`,
+    //             "Amount": invoice.currency === "USD"
+    //                 ? `${finalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+    //                 : `${finalAmount.toLocaleString()} KHR`,
+    //             "Order": invoice.orderStatus === 1
+    //                 ? "Paid"
+    //                 : invoice.orderStatus === 2
+    //                     ? "Deposit"
+    //                     : invoice.orderStatus === 3
+    //                         ? "Unpaid"
+    //                         : "Unknown",
+    //             "Status": invoice.status === 1 ? "Active" : invoice.status === 2 ? "Inactive" : "Unknown",
+    //             "Out Time": invoice.CreateAt ? formatDateClient(invoice.CreateAt) : "N/A",
+    //             "For Month": selectedMonth || "All Data"
+    //         };
 
-            // Dynamically add item details in separate columns
-            itemsArray.forEach((item, index) => {
-                rowData[`${index + 1} Name`] = item.name || "N/A";
-                rowData[`${index + 1} Qty`] = item.qty || 0;
-                rowData[` ${index + 1} Price`] = invoice.currency === "USD"
-                    ? `${parseFloat(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
-                    : `${parseFloat(item.price || 0).toLocaleString()} KHR`;
-                rowData[`${index + 1} Amount`] = invoice.currency === "USD"
-                    ? `${parseFloat(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
-                    : `${parseFloat(item.amount || 0).toLocaleString()} KHR`;
-            });
+    //         // Dynamically add item details in separate columns
+    //         itemsArray.forEach((item, index) => {
+    //             rowData[`${index + 1} Name`] = item.name || "N/A";
+    //             rowData[`${index + 1} Qty`] = item.qty || 0;
+    //             rowData[` ${index + 1} Price`] = invoice.currency === "USD"
+    //                 ? `${parseFloat(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+    //                 : `${parseFloat(item.price || 0).toLocaleString()} KHR`;
+    //             rowData[`${index + 1} Amount`] = invoice.currency === "USD"
+    //                 ? `${parseFloat(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+    //                 : `${parseFloat(item.amount || 0).toLocaleString()} KHR`;
+    //         });
 
-            return rowData;
-        });
+    //         return rowData;
+    //     });
 
-        // Add total rows
-        formattedData.push({
-            "No": "",
-            "Name": "",
-            "Qty": "",
-            "Discount": "",
-            "D-Percentage(%)": "",
-            "Deposit": "",
-            "Amount": `Total (USD): ${totalAmountUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`,
-            "Order": "",
-            "Status": "",
-            "Out Time": "",
-            "For Month": selectedMonth || "All Data"
-        });
+    //     // Add total rows
+    //     formattedData.push({
+    //         "No": "",
+    //         "Name": "",
+    //         "Qty": "",
+    //         "Discount": "",
+    //         "D-Percentage(%)": "",
+    //         "Deposit": "",
+    //         "Amount": `Total (USD): ${totalAmountUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`,
+    //         "Order": "",
+    //         "Status": "",
+    //         "Out Time": "",
+    //         "For Month": selectedMonth || "All Data"
+    //     });
 
-        formattedData.push({
-            "No": "",
-            "Name": "",
-            "Qty": "",
-            "Discount": "",
-            "D-Percentage(%)": "",
-            "Deposit": "",
-            "Amount": `Total (KHR): ${totalAmountKHR.toLocaleString()} KHR`,
-            "Order": "",
-            "Status": "",
-            "Out Time": "",
-            "For Month": selectedMonth || "All Data"
-        });
+    //     formattedData.push({
+    //         "No": "",
+    //         "Name": "",
+    //         "Qty": "",
+    //         "Discount": "",
+    //         "D-Percentage(%)": "",
+    //         "Deposit": "",
+    //         "Amount": `Total (KHR): ${totalAmountKHR.toLocaleString()} KHR`,
+    //         "Order": "",
+    //         "Status": "",
+    //         "Out Time": "",
+    //         "For Month": selectedMonth || "All Data"
+    //     });
 
-        // Create Excel file using SheetJS
-        const worksheet = XLSX.utils.json_to_sheet(formattedData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, `Invoices_${selectedMonth || "All_Data"}`);
+    //     // Create Excel file using SheetJS
+    //     const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    //     const workbook = XLSX.utils.book_new();
+    //     XLSX.utils.book_append_sheet(workbook, worksheet, `Invoices_${selectedMonth || "All_Data"}`);
 
-        // Download Excel file
-        const fileName = `Invoices_${selectedMonth || "All_Data"}.xlsx`;
-        XLSX.writeFile(workbook, fileName);
-    };
+    //     // Download Excel file
+    //     const fileName = `Invoices_${selectedMonth || "All_Data"}.xlsx`;
+    //     XLSX.writeFile(workbook, fileName);
+    // };
 
 
 
@@ -772,7 +783,7 @@ const InvoiceListScreen = () => {
         const kh = riel.map((item, index) => (item.khriel))
         // const currency = item.currency;
         const currency = item.currency === "KHR" ? "៛" : "$";
-        const finalAmountDue = item.finalAmount - item.disposit;
+        const finalAmountDue = item.finalAmount;
         const roundToNearest500 = (amount) => {
             return Math.round(amount / 100) * 100;
         };
@@ -1006,7 +1017,7 @@ const InvoiceListScreen = () => {
             </div>
             <div class="date-invoice">
                 <h2>INVOICE DATE</h2>
-                <p>${moment().format(" MM/  DD/  YYYY")}</p>
+                <p>${moment().format(" DD/  MM/  YYYY")}</p>
             </div>
         </div>
         <table>
@@ -1022,7 +1033,7 @@ const InvoiceListScreen = () => {
                 ${items.map((item, index) =>
             ` <tr class="td-table">
                  <td>${index + 1}</td>
-                 <td class="left-txt khmer-regular">${item.name}</td>
+                 <td class="left-txt khmer-regular">${item.name.charAt(0).toUpperCase() + item.name.slice(1)}</td>
                 <td>${item.qty}</td>
                 <td> ${currency === "៛" ? Number(item.price).toLocaleString() : Number(item.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency} </td>
                 <td> ${currency === "៛" ? Number(item.amount).toLocaleString() : Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency} </td>
@@ -1049,7 +1060,7 @@ const InvoiceListScreen = () => {
                 <div class="subprice">
                     <div class="title-name">Discount</div>
                     <div class="space">:</div>
-                    <div class="title-price">${item.discountPercentage} %</div>
+                    <div class="title-price">${item.discount} %</div>
                 </div>
             </div>
         </div>
@@ -1117,6 +1128,11 @@ const InvoiceListScreen = () => {
             title: "Customer Name",
             dataIndex: "customerName",
             key: "customerName",
+            render: (value, item, index) => (
+                <div className="khmer-regular">
+                  {item.customerName.charAt(0).toUpperCase() + item.customerName.slice(1)}
+                </div>
+              )
             // sorter: (a, b) => a.customerName.localeCompare(b.customerName), // Alphabetical sorting
             // defaultSortOrder: 'ascend', // A to Z by default
         },
@@ -1128,19 +1144,20 @@ const InvoiceListScreen = () => {
             render: (value, item, index) => value + " Qty"
         },
         {
-            title: "Discount",
+            title: "D-Percentage (%)",
             dataIndex: "discount",
+            key: "discount",
+            render: (value, item, index) => value + "%"
+        },
+        {
+            title: "Discount",
+            dataIndex: "discountPercentage",
             key: "discount",
             render: (value, item, index) => (
                 // <span >{item.discount} {item.currency}</span>
-                <span >{item.currency === "KHR" ? Number(item.discount).toLocaleString() : Number(item.discount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}</span>
+                <span >{item.currency === "KHR" ? Number(item.discountPercentage).toLocaleString() : Number(item.discountPercentage).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}</span>
             )
-        },
-        {
-            title: "D-Percentage (%)",
-            dataIndex: "discountPercentage",
-            key: "discount",
-            render: (value, item, index) => value + "%"
+           
         },
         {
             title: "Disposit",
@@ -1151,6 +1168,28 @@ const InvoiceListScreen = () => {
                 <span >{item.currency === "KHR" ? Number(item.disposit).toLocaleString() : Number(item.disposit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}</span>
             )
         },
+        {
+            title: "Total Amount",
+            key: "TotalAmount",
+            render: (value, item, index) => {
+                // Ensure items is an array
+                const itemsArray = Array.isArray(item.items) ? item.items : JSON.parse(item.items || "[]");
+        
+                // Calculate total amount from items array (qty * price for each item)
+                const totalAmount = itemsArray.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
+        
+                return (
+                    <span>
+                        {item.currency === "KHR"
+                            ? Number(totalAmount).toLocaleString()
+                            : Number(totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        } {item.currency}
+                    </span>
+                );
+            }
+        },
+        
+        
         {
             title: "Final Amount",
             dataIndex: "finalAmount",
@@ -1193,7 +1232,7 @@ const InvoiceListScreen = () => {
 
                     </Popconfirm>
                     <Button onClick={() => printInvoice(item)} color="cyan" variant="dashed"  ><span ><FcPrint /> </span></Button>
-                    {/* <Button onClick={() => fetchInvoiceById(item.invId)} color="cyan" variant="dashed"  ><span ><RiEdit2Line /></span></Button> */}
+                    {/* <Button onClick={()=>{setOpen(true)}} color="cyan" variant="dashed"  ><span ><RiEdit2Line /></span></Button> */}
                 </Space>
             )
         },
@@ -1221,7 +1260,7 @@ const InvoiceListScreen = () => {
                             placeholder="Pay Proccess"
                             style={{ width: 150 }}
                             allowClear
-                            value={orderStatus}
+                            // value={orderStatus}
                             onChange={setOrderStatus}
 
                         >
@@ -1231,7 +1270,7 @@ const InvoiceListScreen = () => {
                         </Select>
 
                         <Button onClick={fetchInvoices} type="primary">Search</Button>
-                        <select
+                        {/* <select
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(e.target.value)}
                             style={{ padding: "4px", marginRight: "30px", border: "1px solid black" }}
@@ -1240,13 +1279,13 @@ const InvoiceListScreen = () => {
                             {monthNames.map((month, index) => (
                                 <option key={index} value={month}>{month}</option>
                             ))}
-                        </select>
+                        </select> */}
 
                         <label>Start Date:</label>
                         <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ padding: "4px", }} />
                         <label>End Date:</label>
                         <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                        <Button onClick={handleExport1}>Export for day <PiMicrosoftExcelLogoThin /></Button>
+                        {/* <Button onClick={handleExport1}>Export for day <PiMicrosoftExcelLogoThin /></Button> */}
 
 
 
@@ -1262,8 +1301,9 @@ const InvoiceListScreen = () => {
                 {/* <Button color="primary" variant="dashed" onClick={handleExport} disabled={!selectedMonth}>Excel<PiMicrosoftExcelLogoThin /></Button>
                 <Button color="primary" variant="dashed" onClick={handleExportall}>Excel<PiMicrosoftExcelLogoThin /></Button>  */}
                 <div class="flex gap-10">
+                <Button onClick={handleExport1}>Export Excel <PiMicrosoftExcelLogoThin /></Button>
 
-                    <div>{selectedMonth ? (
+                    {/* <div>{selectedMonth ? (
                         <Button color="primary" variant="dashed" onClick={handleExport} disabled={!selectedMonth}>
                             Export Month <PiMicrosoftExcelLogoThin />
                         </Button>
@@ -1271,7 +1311,7 @@ const InvoiceListScreen = () => {
                         <Button color="primary" variant="dashed" onClick={handleExport}>
                             Export all Data <PiMicrosoftExcelLogoThin />
                         </Button>
-                    )}</div>
+                    )}</div> */}
 
 
                 </div>
@@ -1293,6 +1333,112 @@ const InvoiceListScreen = () => {
 
                 />
             </div>
+            <Modal
+      title="Update Invoice"
+      open={open}
+      onCancel={onCloseModal}
+      footer={null}
+    >
+      <Form 
+        onFinish={onFinish}
+        layout="vertical"
+        form={formCat}
+      >
+        {/* Customer Name */}
+        <Form.Item
+          label="Customer Name"
+          name="customerName"
+          rules={[{ required: true, message: 'Please input Customer Name!' }]}
+        >
+          <Input placeholder="Enter Customer Name" />
+        </Form.Item>
+
+        {/* Items - JSON Structure */}
+        <Form.List name="items">
+          {(fields, { add, remove }) => (
+            <>
+              {fields.map(({ key, name, ...restField }) => (
+                <Row key={key} gutter={8} align="middle">
+                  <Col span={8}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      rules={[{ required: true, message: 'Enter item name' }]}
+                    >
+                      <Input placeholder="Item Name" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={6}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "qty"]}
+                      rules={[{ required: true, message: 'Enter quantity' }]}
+                    >
+                      <InputNumber placeholder="Qty" min={1} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={6}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "price"]}
+                      rules={[{ required: true, message: 'Enter price' }]}
+                    >
+                      <InputNumber placeholder="Price" min={0} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={4}>
+                    <Button onClick={() => remove(name)} danger>-</Button>
+                  </Col>
+                </Row>
+              ))}
+              <Button onClick={() => add()} type="dashed" block>
+                + Add Item
+              </Button>
+            </>
+          )}
+        </Form.List>
+
+        {/* Discount */}
+        <Form.Item
+          label="Discount (%)"
+          name="discount"
+          rules={[{ required: true, message: 'Enter discount value' }]}
+        >
+          <InputNumber placeholder="Enter Discount" min={0} max={100} />
+        </Form.Item>
+
+        {/* Deposit */}
+        <Form.Item
+          label="Deposit"
+          name="disposit"
+          rules={[{ required: true, message: 'Enter deposit amount' }]}
+        >
+          <InputNumber placeholder="Enter Deposit" min={0} />
+        </Form.Item>
+
+        {/* Order Status */}
+        <Form.Item
+          label="Order Status"
+          name="orderStatus"
+          rules={[{ required: true, message: 'Select order status' }]}
+        >
+          <Select>
+            <Select.Option value="1">Active</Select.Option>
+            <Select.Option value="0">Inactive</Select.Option>
+          </Select>
+        </Form.Item>
+
+        {/* Footer Buttons */}
+        <Form.Item style={{ textAlign: "right" }}>
+          <Space>
+            <Button onClick={onCloseModal} danger>Cancel</Button>
+            <button className="bg-blue-500 hover:bg-blue-400 text-white py-1 px-5 rounded-md transition" htmlType="submit">
+              {formCat.getFieldValue("id") ? "Update" : "Save"}
+            </button>
+          </Space>
+        </Form.Item>
+      </Form>
+          </Modal>
 
 
             <div>

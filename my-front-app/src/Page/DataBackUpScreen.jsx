@@ -46,7 +46,7 @@ const DataBackUpScreen = () => {
 
     const permanentlyDelete = async (id) => {
         if (!window.confirm("Permanently delete this invoice?")) return;
-
+        window.location.reload();
         try {
             await axios.delete(`http://localhost:5000/invoices/trash/${id}`);
             fetchTrash();

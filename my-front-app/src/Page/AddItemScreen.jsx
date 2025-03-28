@@ -28,7 +28,7 @@ const AddItemScreen = () => {
     name: "",
     discount: 0,
     disposit: 0,
-    orderStatus: 1,
+    orderStatus: null,
     status: 1,
   });
 
@@ -54,8 +54,8 @@ const AddItemScreen = () => {
       dataIndex: "name",
       key: "customerName",
       render: (value, item, index) => (
-        <div className='khmer-regular'>
-          {item.name}
+        <div className="khmer-regular">
+          {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
         </div>
       )
     },
@@ -162,6 +162,7 @@ const AddItemScreen = () => {
         // Add new item
         setItems([...items, updatedItem]);
       }
+      
 
       // Reset newItem input fields
       setNewItem({ name: "", qty: "", price: "" });
@@ -179,18 +180,32 @@ const AddItemScreen = () => {
     setEditingIndex(index);
   };
 
+  // const calculateTotal = () => {
+  //   const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+
+  //   if (!selectedCustomer && !isNewCustomer) return subtotal; // If no customer, return subtotal
+
+
+  //   const discount = (isNewCustomer ? form.discount : selectedCustomer?.discount || 0); // i need discountPercentage valeu fro database
+
+
+  //   return subtotal - discount;
+  // };
   const calculateTotal = () => {
     const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
-
+  
     if (!selectedCustomer && !isNewCustomer) return subtotal; // If no customer, return subtotal
-
-    // Use selected customer's discount/disposit or the input fields for new customer
-    const discount = (isNewCustomer ? form.discount : selectedCustomer?.discount || 0);
-    // const disposit = isNewCustomer ? form.disposit : selectedCustomer?.disposit || 0;
-
-    return subtotal - discount;
+  
+    // Get discount percentage from database (selectedCustomer) or form input (for new customers)
+    const discountPercentage = isNewCustomer ? form.discount : selectedCustomer?.discount || 0;
+    const disposit = isNewCustomer ? form.disposit : selectedCustomer?.disposit || 0;
+  
+    // Convert percentage to actual discount amount
+    const discountAmount = (subtotal * discountPercentage) / 100;
+  
+    return subtotal - discountAmount -disposit;
   };
-
+  
 
 
   const calculatekh = () => {
@@ -281,12 +296,12 @@ const AddItemScreen = () => {
                 ...customers
                   .filter(customer => customer.id !== 1)
                   .sort((a, b) => b.id - a.id) // Sort by highest ID
-                  .slice(0, 2), // Limit to 10 customers
+                  .slice(0, 3), // Limit to 10 customers
 
-                ...customers.filter(customer => customer.id === 12)
+                ...customers.filter(customer => customer.id === 0)
               ].map((customer, index) => (
                 <option key={customer.id} value={customer.id}>
-                  {index + 1}. {customer.name} (Discount: {customer.discount}, Disposit: {customer.disposit})
+                  {index + 1}. {customer.name.charAt(0).toUpperCase() + customer.name.slice(1)} (Discount: {customer.discount}, Disposit: {customer.disposit})
                 </option>
               ))}
               {/* <option value="new">Add New Customer</option> */}
@@ -314,16 +329,29 @@ const AddItemScreen = () => {
                     value={form.discount}
                     onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })}
                   />
-                  <label className='text mt-2 mr-2'>Disposit </label><Input
+                  {/* <label className='text mt-2 mr-2'>Disposit </label><Input
                     type="number"
                     placeholder="Disposit"
                     value={form.disposit}
                     onChange={(e) => setForm({ ...form, disposit: Number(e.target.value) })}
-                  />
+                  /> */}
+                    {form.orderStatus === 2 && (
+                    <>
+                      <label>Disposit</label>
+                      <Input
+                        type="number"
+                        placeholder="Disposit"
+                        value={form.disposit}
+                        onChange={(e) => setForm({ ...form, disposit: Number(e.target.value) })}
+                        required
+                      />
+                    </>
+                  )}
                   <select class="select-box ml-5"
                     value={form.orderStatus}
                     onChange={(e) => setForm({ ...form, orderStatus: Number(e.target.value) })}
                   >
+                    <option >Please Select</option>
                     <option value={1}>Paid</option>
                     <option value={2}>Deposit</option>
                     <option value={3}>Unpaid</option>
