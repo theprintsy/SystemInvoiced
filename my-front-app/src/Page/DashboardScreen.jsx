@@ -139,11 +139,7 @@ const DasboardScreen = () => {
         </div>
       </div>
 
-      {/* Monthly USD and KHR Balance Chart */}
-      <div className="mt-8 p-6 bg-white shadow-lg rounded-2xl">
-        <h2 className="text-2xl font-bold mb-4">Monthly USD and KHR Balance {moment().format("MMM Do YY")}</h2>
-        <Line data={chartData} options={{ responsive: true }} />
-      </div>
+      
 
       {/* Order Status of the Month */}
       <div className="mt-8 p-6 bg-gray-200 shadow-lg rounded-2xl">
@@ -204,6 +200,11 @@ const DasboardScreen = () => {
                 : "0៛"}</div>
             <div className="text-lg"><u>Total Amount  (For Month P-D-U)</u></div>
           </div>
+          {/* Monthly USD and KHR Balance Chart */}
+      <div className="mt-8 p-6 bg-white shadow-lg rounded-2xl">
+        <h2 className="text-2xl font-bold mb-4">Monthly USD and KHR Balance {moment().format("MMM Do YY")}</h2>
+        <Line data={chartData} options={{ responsive: true }} />
+      </div>
         </div>
       </div>
     </div>

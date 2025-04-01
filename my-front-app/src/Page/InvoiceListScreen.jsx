@@ -1,6 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react'
-import { Table, Button, Space, Modal, Form, Select, Input, message, Tag, DatePicker, Row, Col, InputNumber, Flex, Popconfirm } from 'antd'
+import { Table, Button, Space, Modal, Form, Select, Input, message, Tag, DatePicker, Row, Col, InputNumber, Flex, Popconfirm, notification } from 'antd'
 
 // import { request } from '../Config/request';
 import './PageScreen.css'
@@ -31,6 +31,18 @@ import { FcPrint } from "react-icons/fc";
 import { RiEdit2Line } from "react-icons/ri";
 const { Option } = Select;
 const InvoiceListScreen = () => {
+    
+    // const customerId1 = 33;  // Replace this with the actual customer ID you want to update
+    // const orderStatus1 = 1;  // This could be dynamic based on your application logic
+    const [visible, setVisible] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(null); // To store the selected orderStatus
+  const [currentCustomerId, setCurrentCustomerId] = useState(null); // To store the current customer ID
+    const [customerId, setCustomerId] = useState('');
+    const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+    const [paidAmount, setPaidAmount] = useState('');
+    const [paidAt, setPaidAt] = useState('');  // Date when payment was made
+    const [customerName, setCustomerName] = useState("");
+    const [proccespay, setProccesspay] = useState(null); 
     const [list, setList] = useState([]);
     const [data, setData] = useState([]);
     const [riel, setRiel] = useState([]);
@@ -51,6 +63,7 @@ const InvoiceListScreen = () => {
     const [searchId, setSearchId] = useState("");
     const [orderStatus, setOrderStatus] = useState("");
     const [message1, setMessage] = useState("");
+ 
 
     // const [form, setForm] = useState({
     //     name: data.name || "",
@@ -89,6 +102,9 @@ const InvoiceListScreen = () => {
 
 
     }, []) //selectedMonth, data
+
+
+  
 
 
     // const monthNames = [
@@ -748,29 +764,93 @@ const InvoiceListScreen = () => {
         console.log(value)
     }
 
-    const onFinish = async (item) => {
-        var Id = formCat.getFieldValue("Id")
+    // const onFinish = async (item) => {
+    //     var Id = formCat.getFieldValue("Id")
 
-        var data = {
-            Id: Id,
-            ...item,
+    //     var data = {
+    //         Id: Id,
+    //         ...item,
 
-        }
-        var method = (Id == null ? "post" : "put")
-        var Url = (Id == null ? "customer/create" : "customer/update")
-        const res = await request(Url, method, data);
-        if (res) {
-            message.success(res.message)
-            getlist();
-            onCloseModal()
-        }
+    //     }
+    //     var method = (Id == null ? "post" : "put")
+    //     var Url = (Id == null ? "customer/create" : "customer/update")
+    //     const res = await request(Url, method, data);
+    //     if (res) {
+    //         message.success(res.message)
+    //         getlist();
+    //         onCloseModal()
+    //     }
 
-    }
+    // }
+
+   
+    
+    
+    
+    
+    
+
+
     const handleDelete = async (id) => {
         await axios.delete(`http://localhost:5000/customers/${id}`);
         getlist();
     };
 
+    const handleSubmit = () => {
+        
+        if (selectedStatus !== null) {
+          updateOrderStatus(currentCustomerId, selectedStatus);
+          window.location.reload();
+        } else {
+          message.error("Please select a status.");
+        }
+      };
+
+      const getStatusText = (status) => {
+        switch (status) {
+          case 1:
+            return 'Paid';
+          case 2:
+            return 'Disposit';
+          case 3:
+            return 'Unpaid';
+          default:
+            return 'Unknown';
+        }
+      };
+
+
+
+      const handleOpenModal = (customerId, orderStatus) => {
+        setCurrentCustomerId(customerId);
+        setSelectedStatus(orderStatus); // Default to current status in case you need to show it
+        setVisible(true);
+      };
+
+
+      const updateOrderStatus = async (customerId, orderStatus) => {
+        if (!customerId || !orderStatus) {
+          console.error("❌ Missing customerId or orderStatus");
+          return;
+        }
+    
+        const requestUrl = `http://localhost:5000/update-order-status/${customerId}`;
+    
+        try {
+          const response = await axios.put(
+            requestUrl,
+            { orderStatus },
+            { headers: { "Content-Type": "application/json" } }
+          );
+          console.log("✅ Updated successfully:", response.data);
+          message.success(response.data.message);  // Optional: show success message
+          setVisible(false); // Close modal
+        } catch (error) {
+          console.error("❌ Error updating order status:", error.response?.data || error);
+          message.error("Failed to update order status");
+        }
+      };
+    
 
 
     const printInvoice = (item) => {
@@ -1217,11 +1297,19 @@ const InvoiceListScreen = () => {
             render: (value, item, index) => formatDateClient(value) 
         },
         {
+            title: "Update Paid",
+            dataIndex: "paidAt",
+            key: "paidAt",
+            render: (value, item, index) => formatDateClient(value) 
+        },
+        {
             title: "Action",
             // dataIndex: "status",
             key: "status",
             render: (value, item, index) => (
+                
                 <Space>
+                    
                     <Popconfirm
                         title="Are you sure to delete this invoice?"
                         onConfirm={() => deleteInvoice(item.invId)}
@@ -1232,10 +1320,18 @@ const InvoiceListScreen = () => {
 
                     </Popconfirm>
                     <Button onClick={() => printInvoice(item)} color="cyan" variant="dashed"  ><span ><FcPrint /> </span></Button>
-                    {/* <Button onClick={()=>{setOpen(true)}} color="cyan" variant="dashed"  ><span ><RiEdit2Line /></span></Button> */}
+                    <Button 
+                    
+                    onClick={() => handleOpenModal(item.customerId, item.orderStatus)}
+                    color="cyan" variant="dashed"
+                >
+                    <RiEdit2Line />
+                </Button>
                 </Space>
             )
         },
+       
+        
     ];
 
 
@@ -1334,112 +1430,31 @@ const InvoiceListScreen = () => {
                 />
             </div>
             <Modal
-      title="Update Invoice"
-      open={open}
-      onCancel={onCloseModal}
-      footer={null}
-    >
-      <Form 
-        onFinish={onFinish}
-        layout="vertical"
-        form={formCat}
+        title="Update Order Status"
+        visible={visible}
+        onCancel={() => setVisible(false)}
+        onOk={handleSubmit}
       >
-        {/* Customer Name */}
-        <Form.Item
-          label="Customer Name"
-          name="customerName"
-          rules={[{ required: true, message: 'Please input Customer Name!' }]}
-        >
-          <Input placeholder="Enter Customer Name" />
-        </Form.Item>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <div>
+            <strong>Current Status: </strong>
+            {selectedStatus !== null ? getStatusText(selectedStatus) : 'None Selected'}
+          </div>
 
-        {/* Items - JSON Structure */}
-        <Form.List name="items">
-          {(fields, { add, remove }) => (
-            <>
-              {fields.map(({ key, name, ...restField }) => (
-                <Row key={key} gutter={8} align="middle">
-                  <Col span={8}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "name"]}
-                      rules={[{ required: true, message: 'Enter item name' }]}
-                    >
-                      <Input placeholder="Item Name" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "qty"]}
-                      rules={[{ required: true, message: 'Enter quantity' }]}
-                    >
-                      <InputNumber placeholder="Qty" min={1} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "price"]}
-                      rules={[{ required: true, message: 'Enter price' }]}
-                    >
-                      <InputNumber placeholder="Price" min={0} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={4}>
-                    <Button onClick={() => remove(name)} danger>-</Button>
-                  </Col>
-                </Row>
-              ))}
-              <Button onClick={() => add()} type="dashed" block>
-                + Add Item
-              </Button>
-            </>
-          )}
-        </Form.List>
-
-        {/* Discount */}
-        <Form.Item
-          label="Discount (%)"
-          name="discount"
-          rules={[{ required: true, message: 'Enter discount value' }]}
-        >
-          <InputNumber placeholder="Enter Discount" min={0} max={100} />
-        </Form.Item>
-
-        {/* Deposit */}
-        <Form.Item
-          label="Deposit"
-          name="disposit"
-          rules={[{ required: true, message: 'Enter deposit amount' }]}
-        >
-          <InputNumber placeholder="Enter Deposit" min={0} />
-        </Form.Item>
-
-        {/* Order Status */}
-        <Form.Item
-          label="Order Status"
-          name="orderStatus"
-          rules={[{ required: true, message: 'Select order status' }]}
-        >
-          <Select>
-            <Select.Option value="1">Active</Select.Option>
-            <Select.Option value="0">Inactive</Select.Option>
+          {/* Select dropdown to choose Paid or Disposit */}
+          <Select
+            value={selectedStatus}
+            onChange={setSelectedStatus} // Update selected status
+            style={{ width: '100%' }}
+          >
+            <Select.Option value={1}>Paid</Select.Option>
+            <Select.Option value={2}>Disposit</Select.Option>
+            <Select.Option value={3}>Unpaid</Select.Option>
           </Select>
-        </Form.Item>
+        </Space>
+      </Modal>
 
-        {/* Footer Buttons */}
-        <Form.Item style={{ textAlign: "right" }}>
-          <Space>
-            <Button onClick={onCloseModal} danger>Cancel</Button>
-            <button className="bg-blue-500 hover:bg-blue-400 text-white py-1 px-5 rounded-md transition" htmlType="submit">
-              {formCat.getFieldValue("id") ? "Update" : "Save"}
-            </button>
-          </Space>
-        </Form.Item>
-      </Form>
-          </Modal>
-
+    
 
             <div>
               
