@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button, Input, Select, Space, Table, message } from 'antd';
+import { Button, Input, Select, Space, Table, message,Tag } from 'antd';
 import './add.css'
 import { AiOutlineDelete } from 'react-icons/ai';
 import { MdOutlineViewInAr } from 'react-icons/md';
@@ -14,7 +14,7 @@ const AddItemScreen = () => {
   const [items, setItems] = useState([]);
   const [data, setData] = useState([]);
   const [riel, setRiel] = useState([]);
-  const [newItem, setNewItem] = useState({ name: '', qty: "", price: "" });
+  const [newItem, setNewItem] = useState({ name: '', qty: "", price: ""});
   const [editingIndex, setEditingIndex] = useState(null);
 
   const [currency, setCurrency] = useState("USD"); // and set declea $ and ៛
@@ -64,22 +64,31 @@ const AddItemScreen = () => {
       title: "Quantity",
       dataIndex: "qty",
       key: "qtyTotal",
+      render: (value, item, index) => (
+        <div>{item.qty === 0 ? <mark> Free </mark> : item.qty.toLocaleString()}</div>
+      )
     },
     {
       title: `Price (${currency})`,
       dataIndex: "price",
       key: "discount",
       render: (value, item, index) => (
-        <div>{item.price.toLocaleString()}</div>
+        <div>{item.price === 0 ? <mark> Free </mark> : item.price.toLocaleString()}</div>
       )
+      // render: (value, item, index) => (
+      //   <div>{item.price.toLocaleString()}</div>
+      // )
     },
     {
       title: `Amount (${currency})`,
       dataIndex: "amount",
       key: "disposit",
       render: (value, item, index) => (
-        <div>{item.amount.toLocaleString()}</div>
-      )
+    <div>{item.amount === 0 ? <mark> Free </mark> : item.amount.toLocaleString()}</div>
+  )
+      // render: (value, item, index) => (
+      //   <div>{item.amount.toLocaleString()}</div>
+      // )
     },
     {
       title: "Action",
@@ -148,28 +157,56 @@ const AddItemScreen = () => {
 
 
 
-  const addItem = () => {
-    if (newItem.name && newItem.qty > 0 && newItem.price > 0) {
-      const updatedItem = { ...newItem, amount: newItem.qty * newItem.price };
+  // const addItem = () => {
+  //   if (newItem.name && newItem.qty > 0 && newItem.price > 0) {
+  //     const updatedItem = { ...newItem, amount: newItem.qty * newItem.price };
 
+  //     if (editingIndex !== null) {
+  //       // Update existing item
+  //       const updatedItems = [...items];
+  //       updatedItems[editingIndex] = updatedItem;
+  //       setItems(updatedItems);
+  //       setEditingIndex(null);
+  //     } else {
+  //       // Add new item
+  //       setItems([...items, updatedItem]);
+  //     }
+      
+
+  //     // Reset newItem input fields
+  //     setNewItem({ name: "", qty: 0, price: 0 });
+  //   }
+  // };
+
+
+
+  const addItem = () => {
+    const qty = newItem.qty || 0;
+    const price = newItem.price || 0;
+  
+    console.log("Try Add Item:", newItem);
+  
+    if (newItem.name && qty >= 0 && price >= 0) {
+      const updatedItem = { ...newItem, qty, price, amount: qty * price };
+  
       if (editingIndex !== null) {
-        // Update existing item
         const updatedItems = [...items];
         updatedItems[editingIndex] = updatedItem;
         setItems(updatedItems);
         setEditingIndex(null);
+        console.log("Update Item:", updatedItem);
       } else {
-        // Add new item
         setItems([...items, updatedItem]);
+        console.log("Add New Item:", updatedItem);
       }
-      
-
-      // Reset newItem input fields
-      setNewItem({ name: "", qty: "", price: "" });
+  
+      setNewItem({ name: "", qty: "", price:"" });
+      console.log("Reset Input");
+    } else {
+      console.log("Validation Failed");
     }
   };
-
-
+  
 
   const deleteItem = (index) => {
     const updatedItems = items.filter((_, i) => i !== index);
@@ -380,8 +417,14 @@ const AddItemScreen = () => {
         </div>
         <div class="m-auto w-300 flex gap-10 mt-10">
           <label >Product Name</label><Input type="text" className='khmer-regular' placeholder="Item Name" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} />
-          <label >Quantity</label><Input type="number" placeholder="Qty" value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: Number(e.target.value) })} />
-          <label >Price</label><Input type="number" placeholder="Price" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: Number(e.target.value) })} />
+          <label >Quantity</label><Input type="number" placeholder="Qty" value={newItem.qty}    onChange={e =>
+    setNewItem({ ...newItem, qty: e.target.value === '' ? 0 : Number(e.target.value) })
+  }/>
+          {/* onChange={e => setNewItem({ ...newItem, qty: Number(e.target.value) })} */}
+          <label >Price</label><Input type="number" placeholder="Price" value={newItem.price}   onChange={e =>
+    setNewItem({ ...newItem, price: e.target.value === '' ? 0 : Number(e.target.value) })
+  }/>
+          {/* onChange={e => setNewItem({ ...newItem, price: Number(e.target.value) })} */}
           <div class="p-1.5"><Button type='primary' onClick={addItem} disabled={!selectedCustomer && !isNewCustomer}>{editingIndex !== null ? "Update Item" : "Add Item"}</Button></div>
         </div>
 

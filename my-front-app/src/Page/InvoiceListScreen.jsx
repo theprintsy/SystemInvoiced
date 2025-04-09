@@ -1114,9 +1114,24 @@ const InvoiceListScreen = () => {
             ` <tr class="td-table">
                  <td>${index + 1}</td>
                  <td class="left-txt khmer-regular">${item.name.charAt(0).toUpperCase() + item.name.slice(1)}</td>
-                <td>${item.qty}</td>
-                <td> ${currency === "៛" ? Number(item.price).toLocaleString() : Number(item.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency} </td>
-                <td> ${currency === "៛" ? Number(item.amount).toLocaleString() : Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency} </td>
+                <td>${item.qty === 0 ? 'Free'  : item.qty}</td>
+                <td>  ${item.price === 0 
+                    ? 'Free' 
+                    : `${currency === "៛" 
+                        ? Number(item.price).toLocaleString() 
+                        : Number(item.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    } ${currency}`
+                    } 
+                </td>
+                <td> 
+                     ${item.amount === 0 
+                    ? 'Free' 
+                    : `${currency === "៛" 
+                        ? Number(item.amount).toLocaleString() 
+                        : Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    } ${currency}`
+                }
+                </td>
             </tr> `
         )
 
